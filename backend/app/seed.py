@@ -28,6 +28,7 @@ from app.services.payability import (
     get_or_create_profile,
     profile_version,
 )
+from app.services.payments import register_manual_payment
 
 
 DEMO_CLIENTS = [
@@ -353,6 +354,19 @@ def seed() -> None:
                                 source="demo_seed",
                             )
                         )
+                if index in {12, 24, 29}:
+                    register_manual_payment(
+                        db,
+                        invoice=invoice,
+                        amount=invoice.total_amount,
+                        paid_on=min(invoice.due_on - timedelta(days=2), date.today()),
+                        reference=f"DEMO-PAGO-{client_index + 1}-{index + 1:03d}",
+                        evidence_name=f"comprobante-{invoice.folio}.txt",
+                        evidence_content=(
+                            f"Comprobante sintético sin validez bancaria · {invoice.folio}"
+                        ).encode("utf-8"),
+                        actor_id=admin.id,
+                    )
         db.flush()
         for client_index, client in enumerate(clients):
             invoice = db.scalar(

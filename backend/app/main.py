@@ -6,6 +6,7 @@ from app.access_logging import AuthenticatedAccessLogMiddleware
 from app.routers import (
     access_logs,
     auth,
+    client_portal,
     clients,
     communications,
     contracts,
@@ -34,6 +35,7 @@ app.add_middleware(
 app.include_router(health.router)
 app.include_router(access_logs.router)
 app.include_router(auth.router)
+app.include_router(client_portal.router)
 app.include_router(clients.router)
 app.include_router(invoices.router)
 app.include_router(imports.router)

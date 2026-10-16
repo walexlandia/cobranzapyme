@@ -95,6 +95,15 @@ El incremento 6.1 de la fase 6 agrega:
 - respaldo diario con restauración verificable y gateway TLS local.
 - puerta G3 con autorización operativa versionada, evidencia cifrada y revocación auditable.
 
+El incremento 7.1 de la fase 7 agrega:
+
+- portal de cliente de solo lectura con fecha de corte configurable;
+- resumen de facturas pagables, en riesgo, pagadas, pendientes de la pyme y en disputa;
+- saldos basados exclusivamente en pagos verificados;
+- detalle de checklist y requisitos documentales pendientes por factura;
+- reporte semanal visible y exportable a CSV;
+- pagos y comprobantes sintéticos cifrados en el seed demostrativo.
+
 ## Servicios
 
 - `db`: PostgreSQL 16.
@@ -125,7 +134,7 @@ docker build --network=none -f web/Dockerfile.offline -t recupera-web:offline we
 
 `Dockerfile.offline` reutiliza una imagen Next.js que ya existe en este equipo. Es un recurso local de desarrollo; el artefacto portable sigue siendo `web/Dockerfile`.
 
-Las comprobaciones offline también validan que la cadena Alembic tenga una sola cabeza, que sus tablas y columnas coincidan con los modelos y que estén presentes las configuraciones de TLS, respaldo y restauración de Fase 6.
+Las comprobaciones offline también validan que la cadena Alembic tenga una sola cabeza, que sus tablas y columnas coincidan con los modelos, que estén presentes las configuraciones operativas de Fase 6 y que el contrato del portal de cliente de Fase 7 permanezca completo.
 
 La preparación segura de Fase 6, incluyendo entornos separados, TLS local y respaldo/restauración, está documentada en `docs/fase-6/runbook-piloto.md`.
 
@@ -154,5 +163,6 @@ Los CSV listos para importar están en `data/demo/imports`. Incluyen tres pymes 
 - `docs/fase-4/estado.md`: avance y límites de la operación multicanal simulada.
 - `docs/fase-5/estado.md`: clasificación supervisada, evaluación y puerta de automatización.
 - `docs/fase-6/estado.md`: pagos manuales, cartolas y conciliación supervisada.
+- `docs/fase-7/estado.md`: vista cliente, reporte semanal y próximos incrementos del piloto asistido.
 - `examples/`: archivos de facturas y contactos para probar las importaciones.
 

@@ -59,6 +59,55 @@ class ClientView(ClientCreate):
     created_at: datetime
 
 
+class ClientPortalTotals(BaseModel):
+    invoice_count: int
+    managed_amount: Decimal
+    paid_amount: Decimal
+    outstanding_amount: Decimal
+    payable_count: int
+    at_risk_count: int
+    paid_count: int
+    pending_client_count: int
+    dispute_count: int
+
+
+class ClientPortalInvoiceView(BaseModel):
+    id: uuid.UUID
+    folio: str
+    payer_name: str
+    issued_on: date
+    due_on: date
+    currency: str
+    total_amount: Decimal
+    paid_amount: Decimal
+    outstanding_amount: Decimal
+    status: str
+    payability_status: str
+    checklist_completed: int
+    checklist_total: int
+    missing_items: list[str]
+    pending_client_items: list[str]
+
+
+class ClientPortalSummaryView(BaseModel):
+    client_id: uuid.UUID
+    client_name: str
+    as_of: date
+    totals: ClientPortalTotals
+    invoices: list[ClientPortalInvoiceView]
+
+
+class WeeklyClientReportView(BaseModel):
+    client_id: uuid.UUID
+    client_name: str
+    period_start: date
+    period_end: date
+    generated_at: datetime
+    payments_this_week_count: int
+    payments_this_week_amount: Decimal
+    summary: ClientPortalSummaryView
+
+
 class InvoiceView(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

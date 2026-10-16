@@ -135,7 +135,7 @@ function Login({ apiUrl, apiState, onAuthenticated }) {
           <h1>Facturas pagables.<br /><em>Seguimiento verificable.</em></h1>
           <p>Una consola para importar, validar y gestionar facturas sin perder el aislamiento entre pymes.</p>
         </div>
-        <p className="login-foot">Fase 6 · Pagos, comisión y preparación segura del piloto</p>
+        <p className="login-foot">Fase 7 · Piloto asistido y producto demostrable</p>
       </section>
       <section className="login-panel">
         <div className="login-card">
@@ -822,6 +822,73 @@ function AccessLogsPanel({ request }) {
   </section>;
 }
 
+function ClientPortalPanel({ clientId, userRole, request, download, onOpenChecklist }) {
+  const [asOf, setAsOf] = useState(new Date().toISOString().slice(0, 10));
+  const [summary, setSummary] = useState(null);
+  const [report, setReport] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState(null);
+
+  const query = useCallback((dateField) => {
+    const params = new URLSearchParams({ [dateField]: asOf });
+    if (userRole !== "client") params.set("client_id", clientId);
+    return params.toString();
+  }, [asOf, clientId, userRole]);
+
+  const load = useCallback(async () => {
+    if (!clientId) return;
+    setLoading(true); setMessage(null);
+    try {
+      const [summaryResult, reportResult] = await Promise.all([
+        request(`/api/v1/client-portal/summary?${query("as_of")}`),
+        request(`/api/v1/client-portal/weekly-report?${query("week_ending")}`),
+      ]);
+      setSummary(summaryResult); setReport(reportResult);
+    } catch (error) {
+      setMessage({ type: "error", text: error.message });
+    } finally {
+      setLoading(false);
+    }
+  }, [clientId, query, request]);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function exportReport() {
+    try {
+      await download(`/api/v1/client-portal/weekly-report.csv?${query("week_ending")}`, `reporte-semanal-${asOf}.csv`);
+      setMessage({ type: "success", text: "Reporte semanal exportado en CSV." });
+    } catch (error) {
+      setMessage({ type: "error", text: error.message });
+    }
+  }
+
+  const totals = summary?.totals;
+  return <section className="client-portal-layout">
+    <Message value={message} onClose={() => setMessage(null)} />
+    <article className="report-hero">
+      <div><p className="kicker">E10-01 / E10-02 · SOLO LECTURA</p><h3>{summary?.client_name || "Resumen del cliente"}</h3><p>Estado verificable de facturas, pagos y requisitos documentales al cierre seleccionado.</p></div>
+      <div className="report-controls"><label>Fecha de corte<input type="date" value={asOf} onChange={(event) => setAsOf(event.target.value)} /></label><button type="button" className="secondary" onClick={load} disabled={loading}>{loading ? "Actualizando…" : "Actualizar"}</button><button type="button" className="primary" onClick={exportReport} disabled={!report}>Descargar reporte semanal</button></div>
+    </article>
+    {report && <article className="weekly-strip"><div><span>Semana informada</span><b>{report.period_start} al {report.period_end}</b></div><div><span>Pagos verificados en la semana</span><b>{report.payments_this_week_count} · {money.format(Number(report.payments_this_week_amount))}</b></div><small>El envío por correo queda en modo local hasta disponer de infraestructura externa autorizada.</small></article>}
+    <section className="stats-grid" aria-label="Resumen para la pyme">
+      <Stat label="Facturas gestionadas" value={totals?.invoice_count ?? "—"} note={totals ? money.format(Number(totals.managed_amount)) : "cargando"} />
+      <Stat label="Pagables" value={totals?.payable_count ?? "—"} note="checklist completo" />
+      <Stat label="En riesgo" value={totals?.at_risk_count ?? "—"} note="incluye reclamadas" />
+      <Stat label="Pagadas" value={totals?.paid_count ?? "—"} note={totals ? money.format(Number(totals.paid_amount)) : "cargando"} />
+      <Stat label="Pendientes de la pyme" value={totals?.pending_client_count ?? "—"} note="documentos o antecedentes" />
+      <Stat label="Saldo abierto" value={totals ? money.format(Number(totals.outstanding_amount)) : "—"} note={`${totals?.dispute_count ?? 0} en disputa`} />
+    </section>
+    <article className="table-card">
+      <div className="card-heading"><div><p className="kicker">CARTERA AL {asOf}</p><h3>Estado y checklist</h3></div><span className="read-only">Vista sin acciones operativas</span></div>
+      <div className="table-wrap"><table><thead><tr><th>Factura</th><th>Pagador</th><th>Vencimiento</th><th>Total</th><th>Pagado</th><th>Saldo</th><th>Pagabilidad</th><th>Pendiente pyme</th><th>Detalle</th></tr></thead><tbody>
+        {(summary?.invoices || []).map((invoice) => <tr key={invoice.id}><td><b>{invoice.folio}</b><small>{statusLabels[invoice.status] || invoice.status}</small></td><td>{invoice.payer_name}</td><td>{invoice.due_on}</td><td className="number">{money.format(Number(invoice.total_amount))}</td><td className="number">{money.format(Number(invoice.paid_amount))}</td><td className="number">{money.format(Number(invoice.outstanding_amount))}</td><td><span className={`payability-pill ${invoice.payability_status}`}>{payabilityLabels[invoice.payability_status]} · {invoice.checklist_completed}/{invoice.checklist_total}</span></td><td>{invoice.pending_client_items.length ? <span className="missing">{invoice.pending_client_items.join(", ")}</span> : "Sin pendientes"}</td><td><button type="button" className="mini-button" onClick={() => onOpenChecklist(invoice)}>Ver checklist</button></td></tr>)}
+        {!loading && !summary?.invoices?.length && <tr><td colSpan="9" className="empty">No hay facturas para la fecha seleccionada.</td></tr>}
+        {loading && <tr><td colSpan="9" className="empty">Preparando resumen…</td></tr>}
+      </tbody></table></div>
+    </article>
+  </section>;
+}
+
 function ContractPanel({ clientId, request }) {
   const [contracts, setContracts] = useState([]);
   const [jobs, setJobs] = useState([]);
@@ -1112,6 +1179,20 @@ export default function Home() {
     return payload;
   }, [apiUrl, token]);
 
+  const download = useCallback(async (path, filename) => {
+    const response = await fetch(`${apiUrl}${path}`, { headers: { Authorization: `Bearer ${token}` } });
+    if (!response.ok) {
+      let detail = `Error ${response.status}`;
+      try { detail = (await response.json()).detail || detail; } catch { /* respuesta no JSON */ }
+      throw new Error(detail);
+    }
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url; anchor.download = filename; anchor.click();
+    URL.revokeObjectURL(url);
+  }, [apiUrl, token]);
+
   const startSession = useCallback(async (accessToken) => {
     try {
       const profile = await request("/api/v1/auth/me", {}, accessToken);
@@ -1119,7 +1200,7 @@ export default function Home() {
       setUser(profile);
       sessionStorage.setItem("recupera_token", accessToken);
       if (profile.role === "client") {
-        setActiveView("portfolio");
+        setActiveView("client_portal");
         setSelectedClientId(profile.client_id);
       } else {
         const availableClients = await request("/api/v1/clients", {}, accessToken);
@@ -1275,6 +1356,7 @@ export default function Home() {
   }, [invoices]);
   const canOperate = user?.role === "admin" || user?.role === "operator";
   const viewTitle = {
+    client_portal: ["RESUMEN PARA LA PYME", "Vista cliente y reporte semanal"],
     portfolio: ["OPERACIÓN", "Cartera de facturas"],
     imports: ["CARGA DE DATOS", "Importaciones"],
     contract: ["REGLAS Y TRAZABILIDAD", "Contrato y motor operativo"],
@@ -1292,7 +1374,8 @@ export default function Home() {
       <aside className="sidebar">
         <div className="brand brand-light"><span>R</span> Recupera</div>
         <nav className="side-nav" aria-label="Navegación principal">
-          <button className={activeView === "portfolio" ? "active" : ""} onClick={() => setActiveView("portfolio")}><i>01</i>Cartera</button>
+          <button className={activeView === "client_portal" ? "active" : ""} onClick={() => setActiveView("client_portal")}><i>{canOperate ? "09" : "01"}</i>{canOperate ? "Vista cliente" : "Mi resumen"}</button>
+          <button className={activeView === "portfolio" ? "active" : ""} onClick={() => setActiveView("portfolio")}><i>{canOperate ? "01" : "02"}</i>Cartera</button>
           {canOperate && <button className={activeView === "imports" ? "active" : ""} onClick={() => setActiveView("imports")}><i>02</i>Importaciones</button>}
           {canOperate && <button className={activeView === "contract" ? "active" : ""} onClick={() => setActiveView("contract")}><i>03</i>Contrato y flujo</button>}
           {canOperate && <button className={activeView === "payability" ? "active" : ""} onClick={() => setActiveView("payability")}><i>04</i>Pagabilidad</button>}
@@ -1318,7 +1401,9 @@ export default function Home() {
 
         <Message value={message} onClose={() => setMessage(null)} />
 
-        {activeView === "portfolio" ? (
+        {activeView === "client_portal" ? (
+          <ClientPortalPanel clientId={selectedClientId} userRole={user.role} request={request} download={download} onOpenChecklist={(invoice) => loadPayability(invoice)} />
+        ) : activeView === "portfolio" ? (
           <>
             <section className="stats-grid" aria-label="Resumen de cartera">
               <Stat label="Facturas" value={invoices.length} note="en la cartera seleccionada" />

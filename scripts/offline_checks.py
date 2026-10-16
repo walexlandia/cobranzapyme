@@ -44,6 +44,7 @@ from app.services.classification import (  # noqa: E402
     _extract_dates,
 )
 from app.services.communications import safety_flags, validate_template_text  # noqa: E402
+from app.services.client_portal import build_client_portal_summary  # noqa: E402
 from app.services.invoice_import import (  # noqa: E402
     parse_contact_file,
     parse_invoice_file,
@@ -370,7 +371,7 @@ def check_openapi_contract() -> None:
         from app.main import app
 
         schema = app.openapi()
-        assert len(schema["paths"]) >= 29
+        assert len(schema["paths"]) >= 32
         assert (
             "/api/v1/payability/invoices/{invoice_id}/preventive-confirmation"
             in schema["paths"]
@@ -404,6 +405,11 @@ def check_openapi_contract() -> None:
         assert "/api/v1/access-logs" in schema["paths"]
         assert "/api/v1/pilot/authorizations" in schema["paths"]
         assert "/api/v1/pilot/readiness" in schema["paths"]
+        assert "/api/v1/client-portal/summary" in schema["paths"]
+        assert "/api/v1/client-portal/weekly-report" in schema["paths"]
+        assert "/api/v1/client-portal/weekly-report.csv" in schema["paths"]
+        assert "ClientPortalSummaryView" in schema["components"]["schemas"]
+        assert "WeeklyClientReportView" in schema["components"]["schemas"]
     finally:
         if previous_module is None:
             sys.modules.pop("pydantic_settings", None)
@@ -556,6 +562,107 @@ def check_phase6_operational_assets() -> None:
     assert (ROOT / "docs" / "fase-6" / "checklist-g3.md").is_file()
 
 
+def check_phase7_client_portal_assets() -> None:
+    router = (ROOT / "backend" / "app" / "routers" / "client_portal.py").read_text(
+        encoding="utf-8"
+    )
+    service = (ROOT / "backend" / "app" / "services" / "client_portal.py").read_text(
+        encoding="utf-8"
+    )
+    interface = (ROOT / "web" / "app" / "page.jsx").read_text(encoding="utf-8")
+    tests = (ROOT / "backend" / "tests" / "test_client_portal.py").read_text(
+        encoding="utf-8"
+    )
+    assert "_authorized_client" in router
+    assert "Payment.verified.is_(True)" in service
+    assert 'item.responsible_role == "client"' in service
+    assert "ClientPortalPanel" in interface
+    assert "weekly-report.csv" in interface
+    assert "portal-other" in tests and "status_code == 403" in tests
+
+
+def check_client_portal_calculation() -> None:
+    client_id = uuid.uuid4()
+    payer_id = uuid.uuid4()
+    invoice_id = uuid.uuid4()
+    client = models.Client(id=client_id, name="Pyme sintética", rut="TEST-PORTAL")
+    payer = models.Payer(id=payer_id, rut="TEST-PAYER", legal_name="Pagador sintético")
+    invoice = models.Invoice(
+        id=invoice_id,
+        client_id=client_id,
+        payer_id=payer_id,
+        payer=payer,
+        folio="PORTAL-OFFLINE-001",
+        issued_on=date(2026, 10, 1),
+        due_on=date(2026, 10, 31),
+        total_amount=Decimal("100000"),
+        status=InvoiceStatus.ISSUED,
+    )
+    items = [
+        models.PayabilityItem(
+            id=uuid.uuid4(),
+            client_id=client_id,
+            invoice_id=invoice_id,
+            item_type="sii_acceptance",
+            label="Aceptación SII",
+            status="fulfilled",
+            required=True,
+            blocks_payability=True,
+            responsible_role="client",
+            evidence={"sii_status": "accepted"},
+        ),
+        models.PayabilityItem(
+            id=uuid.uuid4(),
+            client_id=client_id,
+            invoice_id=invoice_id,
+            item_type="purchase_order",
+            label="Orden de compra",
+            status="requested",
+            required=True,
+            blocks_payability=True,
+            responsible_role="client",
+            evidence={},
+        ),
+    ]
+    payment = models.Payment(
+        id=uuid.uuid4(),
+        client_id=client_id,
+        invoice_id=invoice_id,
+        amount=Decimal("25000"),
+        paid_on=date(2026, 10, 20),
+        verified=True,
+        source="manual",
+    )
+    profile = models.PayerProfile(
+        id=uuid.uuid4(),
+        payer_id=payer_id,
+        operational_requirements={
+            "requires_purchase_order": True,
+            "requires_hes": False,
+            "requires_delivery_note": False,
+            "requires_supplier_portal": False,
+            "other_requirements": [],
+            "risk_days_before_due": 7,
+        },
+    )
+
+    class FakeSession:
+        def __init__(self) -> None:
+            self.results = iter(([invoice], items, [payment], [profile]))
+
+        def scalars(self, _statement: object):
+            return iter(next(self.results))
+
+    result = build_client_portal_summary(
+        FakeSession(), client=client, as_of=date(2026, 10, 25)
+    )
+    assert result["totals"]["invoice_count"] == 1
+    assert result["totals"]["paid_amount"] == Decimal("25000.00")
+    assert result["totals"]["outstanding_amount"] == Decimal("75000.00")
+    assert result["totals"]["pending_client_count"] == 1
+    assert result["invoices"][0]["pending_client_items"] == ["Orden de compra"]
+
+
 def check_workflow_rules() -> None:
     class InvoiceStub:
         issued_on = date(2026, 10, 1)
@@ -606,6 +713,8 @@ def main() -> None:
         check_migration_chain,
         check_migrations_match_models,
         check_phase6_operational_assets,
+        check_phase7_client_portal_assets,
+        check_client_portal_calculation,
         check_workflow_rules,
         check_complete_stage_windows,
     ]
