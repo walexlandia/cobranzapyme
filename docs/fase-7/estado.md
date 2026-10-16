@@ -22,17 +22,29 @@
 - Todas las consultas autenticadas siguen entrando al ledger de accesos de Fase 6.
 - La entrega por email permanece deshabilitada mientras no exista infraestructura externa autorizada.
 
+## Incremento 7.2 — Documentos solicitados
+
+| Historia | Estado local | Evidencia |
+|---|---|---|
+| E10-03 Carga desde la vista cliente | Completo localmente | Selector de requisito, formatos permitidos, máximo 10 MB y confirmación de envío |
+| Cifrado y trazabilidad | Completo | AES-256-GCM, SHA-256, documento asociado a factura/requisito y eventos inmutables |
+| Prevención de duplicados | Completo | Restricción única por cliente, requisito y hash; reintentos devuelven el envío existente |
+| Revisión del operador | Completo | Bandeja pendiente, aceptación o rechazo motivado; solo la aceptación completa el requisito |
+| Datos demostrables | Completo | Una evidencia ficticia pendiente de revisión por cada pyme del seed |
+
+La tabla `client_document_submissions` separa el archivo cifrado de su decisión de revisión. La interfaz nunca expone el contenido ni permite que un cliente complete directamente su checklist.
+
 ## Validación local
 
 - Compilación Python aprobada.
 - Contrato OpenAPI del portal y sus tres rutas aprobado.
 - 23 comprobaciones offline aprobadas, incluido el cálculo funcional del resumen con pago parcial.
 - Build de producción Next.js aprobado con la imagen local `recupera-web:phase7`.
-- Pruebas HTTP/PostgreSQL agregadas en `backend/tests/test_client_portal.py`; su ejecución sigue pendiente porque el entorno local no contiene `pytest` ni la imagen backend con dependencias.
+- Pruebas HTTP/PostgreSQL agregadas en `backend/tests/test_client_portal.py` y `backend/tests/test_client_documents.py`; su ejecución sigue pendiente porque el entorno local no contiene `pytest` ni la imagen backend con dependencias.
 
-## Próximo incremento 7.2
+## Próximo incremento 7.3
 
-1. Carga de documentos solicitados desde la vista cliente.
-2. Cifrado, hash, asociación al requisito y evento inmutable.
-3. Revisión del operador antes de aceptar la evidencia y cerrar el requisito.
-4. Prevención de duplicados y pruebas de aislamiento por pyme.
+1. Panel de métricas operativas y económicas del piloto.
+2. Tendencias de pagabilidad, pagos, causas de atraso y tiempo humano.
+3. Registro visible de decisiones e incidencias del piloto.
+4. Recorrido demostrable de punta a punta sin acceso directo a la base de datos.

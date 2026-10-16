@@ -371,7 +371,7 @@ def check_openapi_contract() -> None:
         from app.main import app
 
         schema = app.openapi()
-        assert len(schema["paths"]) >= 32
+        assert len(schema["paths"]) >= 35
         assert (
             "/api/v1/payability/invoices/{invoice_id}/preventive-confirmation"
             in schema["paths"]
@@ -408,8 +408,15 @@ def check_openapi_contract() -> None:
         assert "/api/v1/client-portal/summary" in schema["paths"]
         assert "/api/v1/client-portal/weekly-report" in schema["paths"]
         assert "/api/v1/client-portal/weekly-report.csv" in schema["paths"]
+        assert "/api/v1/client-portal/documents" in schema["paths"]
+        assert "/api/v1/client-portal/document-submissions" in schema["paths"]
+        assert (
+            "/api/v1/client-portal/document-submissions/{submission_id}/review"
+            in schema["paths"]
+        )
         assert "ClientPortalSummaryView" in schema["components"]["schemas"]
         assert "WeeklyClientReportView" in schema["components"]["schemas"]
+        assert "ClientDocumentSubmissionView" in schema["components"]["schemas"]
     finally:
         if previous_module is None:
             sys.modules.pop("pydantic_settings", None)
@@ -436,6 +443,7 @@ def check_schema_compiles_for_postgresql() -> None:
         "payment_attributions",
         "data_access_logs",
         "pilot_authorization_events",
+        "client_document_submissions",
     }
     assert set(Base.metadata.tables) == expected
     dialect = postgresql.dialect()
@@ -477,8 +485,8 @@ def check_migration_chain() -> None:
         if down_revision is not None:
             assert down_revision in revisions, f"Unknown parent {down_revision} in {path.name}"
             heads.discard(down_revision)
-    assert heads == {"0012"}, f"Unexpected migration heads: {sorted(heads)}"
-    current: str | None = "0012"
+    assert heads == {"0013"}, f"Unexpected migration heads: {sorted(heads)}"
+    current: str | None = "0013"
     visited = []
     while current is not None:
         assert current not in visited, f"Migration cycle at {current}"
@@ -573,12 +581,23 @@ def check_phase7_client_portal_assets() -> None:
     tests = (ROOT / "backend" / "tests" / "test_client_portal.py").read_text(
         encoding="utf-8"
     )
+    document_service = (
+        ROOT / "backend" / "app" / "services" / "client_documents.py"
+    ).read_text(encoding="utf-8")
+    document_tests = (
+        ROOT / "backend" / "tests" / "test_client_documents.py"
+    ).read_text(encoding="utf-8")
     assert "_authorized_client" in router
     assert "Payment.verified.is_(True)" in service
     assert 'item.responsible_role == "client"' in service
     assert "ClientPortalPanel" in interface
     assert "weekly-report.csv" in interface
+    assert "DocumentUploadDialog" in interface and "REVISIÓN HUMANA" in interface
+    assert "encrypt_document_content" in document_service
+    assert "content_sha256" in document_service
     assert "portal-other" in tests and "status_code == 403" in tests
+    assert "decrypt_document_content" in document_tests
+    assert "client_document.reviewed" in document_tests
 
 
 def check_client_portal_calculation() -> None:

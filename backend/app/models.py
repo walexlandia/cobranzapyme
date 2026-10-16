@@ -249,6 +249,43 @@ class Document(BaseRecord, Base):
     encryption_nonce: Mapped[bytes | None] = mapped_column(LargeBinary)
 
 
+class ClientDocumentSubmission(BaseRecord, Base):
+    __tablename__ = "client_document_submissions"
+    __table_args__ = (
+        UniqueConstraint(
+            "client_id",
+            "payability_item_id",
+            "content_sha256",
+            name="uq_client_document_submission_content",
+        ),
+        CheckConstraint(
+            "status IN ('pending', 'accepted', 'rejected')",
+            name="ck_client_document_submission_status",
+        ),
+        Index(
+            "ix_client_document_submission_queue",
+            "client_id",
+            "status",
+            "created_at",
+        ),
+    )
+
+    client_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("clients.id"), nullable=False, index=True)
+    invoice_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("invoices.id"), nullable=False, index=True)
+    payability_item_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("payability_items.id"), nullable=False, index=True
+    )
+    document_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("documents.id"), unique=True, nullable=False
+    )
+    content_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    status: Mapped[str] = mapped_column(String(20), default="pending", nullable=False)
+    submitted_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
+    reviewed_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"), index=True)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    review_note: Mapped[str | None] = mapped_column(Text)
+
+
 class MessageTemplate(BaseRecord, Base):
     __tablename__ = "message_templates"
     __table_args__ = (

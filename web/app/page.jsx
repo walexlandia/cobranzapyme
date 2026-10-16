@@ -61,6 +61,8 @@ const eventLabels = {
   "payment.attribution_calculated": "Atribución contractual calculada",
   "pilot.authorization_recorded": "Autorización del piloto registrada",
   "pilot.authorization_revoked": "Autorización del piloto revocada",
+  "client_document.submitted": "Documento enviado por la pyme",
+  "client_document.reviewed": "Documento de la pyme revisado",
 };
 
 const payabilityLabels = {
@@ -822,12 +824,52 @@ function AccessLogsPanel({ request }) {
   </section>;
 }
 
+function DocumentUploadDialog({ invoice, request, onClose, onUploaded }) {
+  const [checklist, setChecklist] = useState(null);
+  const [itemId, setItemId] = useState("");
+  const [file, setFile] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    request(`/api/v1/payability/invoices/${invoice.id}`).then((result) => {
+      setChecklist(result);
+      const available = result.items.filter((item) => item.required && item.responsible_role === "client" && !["fulfilled", "not_applicable"].includes(item.status));
+      setItemId(available[0]?.id || "");
+    }).catch((requestError) => setError(requestError.message));
+  }, [invoice.id, request]);
+
+  const availableItems = checklist?.items?.filter((item) => item.required && item.responsible_role === "client" && !["fulfilled", "not_applicable"].includes(item.status)) || [];
+
+  async function submit(event) {
+    event.preventDefault();
+    if (!file || !itemId) return;
+    setBusy(true); setError("");
+    const body = new FormData();
+    body.append("invoice_id", invoice.id); body.append("payability_item_id", itemId); body.append("document", file);
+    try {
+      const submission = await request("/api/v1/client-portal/documents", { method: "POST", body });
+      onUploaded(submission);
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return <div className="modal-backdrop" role="presentation"><section className="modal compact-modal" role="dialog" aria-modal="true" aria-labelledby="document-upload-title"><div className="card-heading"><div><p className="kicker">E10-03 · CARGA SEGURA</p><h2 id="document-upload-title">Documento para {invoice.folio}</h2></div><button type="button" className="icon-button" onClick={onClose} aria-label="Cerrar">×</button></div><form className="pause-form" onSubmit={submit}><label>Requisito<select required value={itemId} onChange={(event) => setItemId(event.target.value)}><option value="">Selecciona un requisito</option>{availableItems.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label><label>Archivo<input required type="file" accept=".pdf,.png,.jpg,.jpeg,.txt,.csv,.xlsx" onChange={(event) => setFile(event.target.files?.[0] || null)} /></label><p className="form-help">Máximo 10 MB. El contenido se cifra antes de almacenarse y queda pendiente de revisión humana.</p>{error && <p className="field-error">{error}</p>}{checklist && !availableItems.length && <p className="success-line">No hay requisitos documentales pendientes de la pyme.</p>}<div className="button-row end"><button type="button" className="ghost" onClick={onClose}>Cancelar</button><button className="primary" disabled={busy || !file || !itemId}>{busy ? "Cifrando…" : "Enviar a revisión"}</button></div></form></section></div>;
+}
+
 function ClientPortalPanel({ clientId, userRole, request, download, onOpenChecklist }) {
   const [asOf, setAsOf] = useState(new Date().toISOString().slice(0, 10));
   const [summary, setSummary] = useState(null);
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
+  const [submissions, setSubmissions] = useState([]);
+  const [reviewNotes, setReviewNotes] = useState({});
+  const [reviewing, setReviewing] = useState("");
+  const [documentTarget, setDocumentTarget] = useState(null);
 
   const query = useCallback((dateField) => {
     const params = new URLSearchParams({ [dateField]: asOf });
@@ -839,11 +881,14 @@ function ClientPortalPanel({ clientId, userRole, request, download, onOpenCheckl
     if (!clientId) return;
     setLoading(true); setMessage(null);
     try {
-      const [summaryResult, reportResult] = await Promise.all([
+      const calls = [
         request(`/api/v1/client-portal/summary?${query("as_of")}`),
         request(`/api/v1/client-portal/weekly-report?${query("week_ending")}`),
-      ]);
+      ];
+      if (userRole !== "client") calls.push(request(`/api/v1/client-portal/document-submissions?client_id=${clientId}&status=pending`));
+      const [summaryResult, reportResult, submissionRows = []] = await Promise.all(calls);
       setSummary(summaryResult); setReport(reportResult);
+      setSubmissions(submissionRows);
     } catch (error) {
       setMessage({ type: "error", text: error.message });
     } finally {
@@ -859,6 +904,21 @@ function ClientPortalPanel({ clientId, userRole, request, download, onOpenCheckl
       setMessage({ type: "success", text: "Reporte semanal exportado en CSV." });
     } catch (error) {
       setMessage({ type: "error", text: error.message });
+    }
+  }
+
+  async function reviewDocument(submission, decision) {
+    const note = (reviewNotes[submission.id] || "").trim();
+    if (decision === "rejected" && !note) { setMessage({ type: "error", text: "Indica el motivo antes de rechazar el documento." }); return; }
+    setReviewing(submission.id); setMessage(null);
+    try {
+      await request(`/api/v1/client-portal/document-submissions/${submission.id}/review`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ client_id: clientId, decision, note: note || null }) });
+      setMessage({ type: "success", text: decision === "accepted" ? "Documento aceptado y requisito completado." : "Documento rechazado; el requisito continúa abierto." });
+      await load();
+    } catch (error) {
+      setMessage({ type: "error", text: error.message });
+    } finally {
+      setReviewing("");
     }
   }
 
@@ -878,14 +938,16 @@ function ClientPortalPanel({ clientId, userRole, request, download, onOpenCheckl
       <Stat label="Pendientes de la pyme" value={totals?.pending_client_count ?? "—"} note="documentos o antecedentes" />
       <Stat label="Saldo abierto" value={totals ? money.format(Number(totals.outstanding_amount)) : "—"} note={`${totals?.dispute_count ?? 0} en disputa`} />
     </section>
+    {userRole !== "client" && <article className="document-review-card"><div className="card-heading"><div><p className="kicker">E10-03 · REVISIÓN HUMANA</p><h3>Documentos pendientes</h3></div><span className="read-only">{submissions.length} por revisar</span></div><div className="document-review-list">{submissions.map((submission) => <article key={submission.id}><div><b>{submission.invoice_folio} · {submission.item_label}</b><span>{submission.original_name} · {submission.submitted_by_name}</span><small>SHA-256 {submission.content_sha256.slice(0, 16)}… · {new Date(submission.created_at).toLocaleString("es-CL")}</small></div><input aria-label={`Observación para ${submission.original_name}`} placeholder="Observación de revisión" value={reviewNotes[submission.id] || ""} onChange={(event) => setReviewNotes((current) => ({ ...current, [submission.id]: event.target.value }))} /><div className="button-row"><button type="button" className="mini-button danger" disabled={reviewing === submission.id} onClick={() => reviewDocument(submission, "rejected")}>Rechazar</button><button type="button" className="mini-button" disabled={reviewing === submission.id} onClick={() => reviewDocument(submission, "accepted")}>Aceptar</button></div></article>)}{!submissions.length && <p className="empty">No hay documentos pendientes para este cliente.</p>}</div></article>}
     <article className="table-card">
       <div className="card-heading"><div><p className="kicker">CARTERA AL {asOf}</p><h3>Estado y checklist</h3></div><span className="read-only">Vista sin acciones operativas</span></div>
       <div className="table-wrap"><table><thead><tr><th>Factura</th><th>Pagador</th><th>Vencimiento</th><th>Total</th><th>Pagado</th><th>Saldo</th><th>Pagabilidad</th><th>Pendiente pyme</th><th>Detalle</th></tr></thead><tbody>
-        {(summary?.invoices || []).map((invoice) => <tr key={invoice.id}><td><b>{invoice.folio}</b><small>{statusLabels[invoice.status] || invoice.status}</small></td><td>{invoice.payer_name}</td><td>{invoice.due_on}</td><td className="number">{money.format(Number(invoice.total_amount))}</td><td className="number">{money.format(Number(invoice.paid_amount))}</td><td className="number">{money.format(Number(invoice.outstanding_amount))}</td><td><span className={`payability-pill ${invoice.payability_status}`}>{payabilityLabels[invoice.payability_status]} · {invoice.checklist_completed}/{invoice.checklist_total}</span></td><td>{invoice.pending_client_items.length ? <span className="missing">{invoice.pending_client_items.join(", ")}</span> : "Sin pendientes"}</td><td><button type="button" className="mini-button" onClick={() => onOpenChecklist(invoice)}>Ver checklist</button></td></tr>)}
+        {(summary?.invoices || []).map((invoice) => <tr key={invoice.id}><td><b>{invoice.folio}</b><small>{statusLabels[invoice.status] || invoice.status}</small></td><td>{invoice.payer_name}</td><td>{invoice.due_on}</td><td className="number">{money.format(Number(invoice.total_amount))}</td><td className="number">{money.format(Number(invoice.paid_amount))}</td><td className="number">{money.format(Number(invoice.outstanding_amount))}</td><td><span className={`payability-pill ${invoice.payability_status}`}>{payabilityLabels[invoice.payability_status]} · {invoice.checklist_completed}/{invoice.checklist_total}</span></td><td>{invoice.pending_client_items.length ? <span className="missing">{invoice.pending_client_items.join(", ")}</span> : "Sin pendientes"}</td><td><div className="row-actions">{userRole === "client" && invoice.pending_client_items.length > 0 && <button type="button" className="mini-button" onClick={() => setDocumentTarget(invoice)}>Subir documento</button>}<button type="button" className="mini-button" onClick={() => onOpenChecklist(invoice)}>Ver checklist</button></div></td></tr>)}
         {!loading && !summary?.invoices?.length && <tr><td colSpan="9" className="empty">No hay facturas para la fecha seleccionada.</td></tr>}
         {loading && <tr><td colSpan="9" className="empty">Preparando resumen…</td></tr>}
       </tbody></table></div>
     </article>
+    {documentTarget && <DocumentUploadDialog invoice={documentTarget} request={request} onClose={() => setDocumentTarget(null)} onUploaded={(submission) => { setDocumentTarget(null); setMessage({ type: "success", text: `${submission.original_name} quedó cifrado y pendiente de revisión.` }); load(); }} />}
   </section>;
 }
 

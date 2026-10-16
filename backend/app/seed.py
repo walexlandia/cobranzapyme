@@ -22,6 +22,7 @@ from app.services.communications import (
     create_template_version,
     register_inbound_message,
 )
+from app.services.client_documents import create_client_document_submission
 from app.services.payability import (
     create_profile_revision,
     ensure_checklist,
@@ -233,16 +234,17 @@ def seed() -> None:
         base_date = date.today() - timedelta(days=90)
         for client_index, client in enumerate(clients):
             client_user_email = f"cliente{client_index + 1}@recupera.local"
-            if db.scalar(select(User).where(User.email == client_user_email)) is None:
-                db.add(
-                    User(
-                        email=client_user_email,
-                        full_name=f"Usuario {client.name}",
-                        password_hash=hash_password(settings.demo_admin_password),
-                        role=Role.CLIENT,
-                        client_id=client.id,
-                    )
+            client_user = db.scalar(select(User).where(User.email == client_user_email))
+            if client_user is None:
+                client_user = User(
+                    email=client_user_email,
+                    full_name=f"Usuario {client.name}",
+                    password_hash=hash_password(settings.demo_admin_password),
+                    role=Role.CLIENT,
+                    client_id=client.id,
                 )
+                db.add(client_user)
+                db.flush()
             for index in range(30):
                 folio = f"DEMO-{client_index + 1}-{index + 1:03d}"
                 invoice = db.scalar(
@@ -367,6 +369,29 @@ def seed() -> None:
                         ).encode("utf-8"),
                         actor_id=admin.id,
                     )
+                if index == 1:
+                    pending_client_item = next(
+                        (
+                            item
+                            for item in items
+                            if item.required
+                            and item.responsible_role == "client"
+                            and item.status not in {"fulfilled", "not_applicable"}
+                        ),
+                        None,
+                    )
+                    if pending_client_item is not None:
+                        create_client_document_submission(
+                            db,
+                            user=client_user,
+                            invoice=invoice,
+                            item=pending_client_item,
+                            filename=f"respaldo-demo-{invoice.folio}.pdf",
+                            content=(
+                                "Documento sintético para revisar; no corresponde a una "
+                                f"operación real. Factura {invoice.folio}."
+                            ).encode("utf-8"),
+                        )
         db.flush()
         for client_index, client in enumerate(clients):
             invoice = db.scalar(

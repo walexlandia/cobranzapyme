@@ -104,6 +104,15 @@ El incremento 7.1 de la fase 7 agrega:
 - reporte semanal visible y exportable a CSV;
 - pagos y comprobantes sintéticos cifrados en el seed demostrativo.
 
+El incremento 7.2 agrega:
+
+- carga de documentos por el usuario cliente para requisitos pendientes;
+- cifrado AES-256-GCM, hash SHA-256 y límite de 10 MB antes de almacenar;
+- deduplicación por cliente, requisito y contenido;
+- bandeja de revisión para operadores con aceptación o rechazo motivado;
+- actualización del checklist solo después de aceptación humana;
+- eventos auditables y una evidencia sintética pendiente por pyme en el seed.
+
 ## Servicios
 
 - `db`: PostgreSQL 16.

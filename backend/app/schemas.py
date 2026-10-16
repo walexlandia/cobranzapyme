@@ -108,6 +108,37 @@ class WeeklyClientReportView(BaseModel):
     summary: ClientPortalSummaryView
 
 
+class ClientDocumentSubmissionView(BaseModel):
+    id: uuid.UUID
+    client_id: uuid.UUID
+    invoice_id: uuid.UUID
+    invoice_folio: str
+    payability_item_id: uuid.UUID
+    item_label: str
+    document_id: uuid.UUID
+    original_name: str
+    content_sha256: str
+    status: Literal["pending", "accepted", "rejected"]
+    submitted_by: uuid.UUID
+    submitted_by_name: str
+    reviewed_by: uuid.UUID | None
+    reviewed_at: datetime | None
+    review_note: str | None
+    created_at: datetime
+
+
+class ClientDocumentReviewCommand(BaseModel):
+    client_id: uuid.UUID
+    decision: Literal["accepted", "rejected"]
+    note: str | None = Field(default=None, max_length=2000)
+
+    @model_validator(mode="after")
+    def rejection_requires_note(self) -> "ClientDocumentReviewCommand":
+        if self.decision == "rejected" and not (self.note or "").strip():
+            raise ValueError("El rechazo debe incluir una observación")
+        return self
+
+
 class InvoiceView(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
