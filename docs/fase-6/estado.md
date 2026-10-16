@@ -28,7 +28,7 @@ La atribución se congela al verificar el pago. Un pago a tiempo exige gestión 
 | Historia | Estado local | Evidencia |
 |---|---|---|
 | E0-05 Entornos demo/piloto | Preparado, no publicado | Configuración separada, gateway TLS y secretos distintos; falta infraestructura/dominio externo |
-| E0-06 Respaldo diario/restauración | Completo localmente | Servicio diario, scripts operativos y restauración real en base desechable con 33 tablas |
+| E0-06 Respaldo diario/restauración | Completo localmente | Servicio diario, scripts operativos y restauración real en base desechable con 34 tablas |
 | E12-02 Cifrado | Completo en aplicación local | AES-256-GCM para nuevos comprobantes, migrador idempotente de documentos legados y TLS local |
 | E12-03 Registro de accesos | Completo | Middleware para toda ruta autenticada, `X-Request-ID`, origen seudonimizado, ledger inmutable y vista administrativa **08 Accesos** |
 | Autorización y puerta G3 | Completo localmente | Ledger inmutable con evidencia cifrada, revocación append-only y verificador de contrato, canales, plantillas, contactos y documentos |
