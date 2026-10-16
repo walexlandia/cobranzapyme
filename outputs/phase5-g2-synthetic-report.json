@@ -1,0 +1,149 @@
+{
+  "dataset": "phase5-balanced",
+  "source_kind": "synthetic",
+  "sample_count": 200,
+  "samples_per_category": 20,
+  "correct_count": 180,
+  "accuracy": 0.9,
+  "eligible_for_automation": false,
+  "reason": "Los datos sintéticos sirven para regresión y no habilitan la puerta G2.",
+  "categories": [
+    {
+      "category": "paid",
+      "actual_count": 20,
+      "predicted_count": 19,
+      "correct_count": 18,
+      "precision": 0.9474,
+      "recall": 0.9
+    },
+    {
+      "category": "payment_scheduled",
+      "actual_count": 20,
+      "predicted_count": 19,
+      "correct_count": 18,
+      "precision": 0.9474,
+      "recall": 0.9
+    },
+    {
+      "category": "missing_oc_hes",
+      "actual_count": 20,
+      "predicted_count": 18,
+      "correct_count": 18,
+      "precision": 1.0,
+      "recall": 0.9
+    },
+    {
+      "category": "supplier_data_issue",
+      "actual_count": 20,
+      "predicted_count": 18,
+      "correct_count": 18,
+      "precision": 1.0,
+      "recall": 0.9
+    },
+    {
+      "category": "invoice_disputed",
+      "actual_count": 20,
+      "predicted_count": 18,
+      "correct_count": 18,
+      "precision": 1.0,
+      "recall": 0.9
+    },
+    {
+      "category": "payment_promise",
+      "actual_count": 20,
+      "predicted_count": 18,
+      "correct_count": 18,
+      "precision": 1.0,
+      "recall": 0.9
+    },
+    {
+      "category": "dispute",
+      "actual_count": 20,
+      "predicted_count": 18,
+      "correct_count": 18,
+      "precision": 1.0,
+      "recall": 0.9
+    },
+    {
+      "category": "document_request",
+      "actual_count": 20,
+      "predicted_count": 18,
+      "correct_count": 18,
+      "precision": 1.0,
+      "recall": 0.9
+    },
+    {
+      "category": "wrong_contact",
+      "actual_count": 20,
+      "predicted_count": 18,
+      "correct_count": 18,
+      "precision": 1.0,
+      "recall": 0.9
+    },
+    {
+      "category": "other",
+      "actual_count": 20,
+      "predicted_count": 36,
+      "correct_count": 18,
+      "precision": 0.5,
+      "recall": 0.9
+    }
+  ],
+  "confusion_errors": [
+    {
+      "actual": "dispute",
+      "predicted": "other",
+      "count": 2
+    },
+    {
+      "actual": "document_request",
+      "predicted": "other",
+      "count": 2
+    },
+    {
+      "actual": "invoice_disputed",
+      "predicted": "other",
+      "count": 2
+    },
+    {
+      "actual": "missing_oc_hes",
+      "predicted": "other",
+      "count": 2
+    },
+    {
+      "actual": "other",
+      "predicted": "paid",
+      "count": 1
+    },
+    {
+      "actual": "other",
+      "predicted": "payment_scheduled",
+      "count": 1
+    },
+    {
+      "actual": "paid",
+      "predicted": "other",
+      "count": 2
+    },
+    {
+      "actual": "payment_promise",
+      "predicted": "other",
+      "count": 2
+    },
+    {
+      "actual": "payment_scheduled",
+      "predicted": "other",
+      "count": 2
+    },
+    {
+      "actual": "supplier_data_issue",
+      "predicted": "other",
+      "count": 2
+    },
+    {
+      "actual": "wrong_contact",
+      "predicted": "other",
+      "count": 2
+    }
+  ]
+}

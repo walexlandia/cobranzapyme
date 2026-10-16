@@ -1,0 +1,4 @@
+Tipo documento;Folio;Estado SII;Fecha consulta;Plazo reclamo;Detalle
+factura;DEMO-1-001;Aceptada;2026-10-14;2026-10-15;Aceptación automática
+factura;DEMO-1-002;Pendiente;2026-10-14;2026-10-16;Dentro del plazo de reclamo
+factura;DEMO-1-003;Reclamada;2026-10-14;2026-10-14;Referencia contractual incompleta

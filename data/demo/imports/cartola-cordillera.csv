@@ -1,0 +1,6 @@
+id movimiento;fecha;monto;descripcion;rut contraparte;moneda
+TX-COR-001;2026-07-18;380000;Transferencia factura 11000;96000111-7;CLP
+TX-COR-002;2026-08-05;1625000;Pago agrupado facturas 11000 y 11005;96000111-7;CLP
+TX-COR-003;2026-07-06;553000;Abono factura 11001;96000222-9;CLP
+TX-COR-004;2026-07-24;726000;Pago factura 11002;96000333-0;CLP
+TX-COR-005;2026-07-12;899000;Transferencia factura 11003;96000444-2;CLP

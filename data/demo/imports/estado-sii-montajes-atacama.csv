@@ -1,0 +1,9 @@
+Tipo documento;Folio;Estado SII;Fecha consulta;Plazo reclamo;Detalle
+factura;31000;Aceptada;2026-06-12;2026-06-12;
+factura;31001;Aceptada;2026-06-15;2026-06-15;
+factura;31002;Pendiente;2026-06-18;2026-06-18;Consulta antes de vencimiento del plazo
+factura;31003;Reclamada;2026-06-21;2026-06-21;Falta guía de despacho
+factura;31004;Aceptada;2026-06-24;2026-06-24;
+factura;31005;Aceptada;2026-06-27;2026-06-27;
+factura;31006;Aceptada;2026-06-30;2026-06-30;
+factura;31007;Rechazada;2026-07-03;2026-07-03;Monto no coincide con la recepción

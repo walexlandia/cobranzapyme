@@ -1,0 +1,14 @@
+{
+  "generatedAt": "2026-10-16",
+  "synthetic": true,
+  "pymes": 3,
+  "payers": 8,
+  "contacts": 15,
+  "invoices": 120,
+  "payments": 45,
+  "bankStatementRows": 5,
+  "checklistItems": 480,
+  "siiStatusRows": 24,
+  "payerProfiles": 8,
+  "invalidRows": 7
+}

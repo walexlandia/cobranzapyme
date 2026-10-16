@@ -1,0 +1,9 @@
+Tipo documento;Folio;Estado SII;Fecha consulta;Plazo reclamo;Detalle
+factura;21000;Pendiente;2026-06-08;2026-06-10;A la espera de aceptación
+factura;21001;Aceptada;2026-06-14;2026-06-14;
+factura;21002;Aceptada;2026-06-17;2026-06-17;
+factura;21003;Reclamada;2026-06-20;2026-06-20;Servicio sin conformidad HES
+factura;21004;Aceptada;2026-06-23;2026-06-23;
+factura;21005;Aceptada;2026-06-26;2026-06-26;
+factura;21006;Rechazada;2026-06-29;2026-06-29;Factura no registrada en portal
+factura;21007;Aceptada;2026-07-02;2026-07-02;

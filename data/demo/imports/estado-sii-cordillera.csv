@@ -1,0 +1,9 @@
+Tipo documento;Folio;Estado SII;Fecha consulta;Plazo reclamo;Detalle
+factura;11000;Aceptada;2026-06-10;2026-06-10;Aceptación automática
+factura;11001;Aceptada;2026-06-13;2026-06-13;
+factura;11002;Reclamada;2026-06-15;2026-06-16;Diferencia en cantidades
+factura;11003;Pendiente;2026-06-17;2026-06-19;Dentro del plazo de reclamo
+factura;11004;Aceptada;2026-06-22;2026-06-22;
+factura;11005;Rechazada;2026-06-24;2026-06-25;Referencia de OC inválida
+factura;11006;Aceptada;2026-06-28;2026-06-28;
+factura;11007;Aceptada;2026-07-01;2026-07-01;

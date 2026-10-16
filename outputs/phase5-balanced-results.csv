@@ -1,0 +1,201 @@
+﻿case_id,source_kind,actual_category,predicted_category,correct,confidence,ambiguous,text
+paid-01,synthetic,paid,paid,True,0.9400,False,La transferencia ya fue realizada y adjunto el comprobante. Caso sintético 1.
+paid-02,synthetic,paid,paid,True,0.9200,False,El pago fue efectuado esta mañana. Caso sintético 2.
+paid-03,synthetic,paid,paid,True,0.9200,False,La factura ya está pagada. Caso sintético 3.
+paid-04,synthetic,paid,paid,True,0.9400,False,La transferencia ya fue realizada y adjunto el comprobante. Caso sintético 4.
+paid-05,synthetic,paid,paid,True,0.9200,False,El pago fue efectuado esta mañana. Caso sintético 5.
+paid-06,synthetic,paid,paid,True,0.9200,False,La factura ya está pagada. Caso sintético 6.
+paid-07,synthetic,paid,paid,True,0.9400,False,La transferencia ya fue realizada y adjunto el comprobante. Caso sintético 7.
+paid-08,synthetic,paid,paid,True,0.9200,False,El pago fue efectuado esta mañana. Caso sintético 8.
+paid-09,synthetic,paid,paid,True,0.9200,False,La factura ya está pagada. Caso sintético 9.
+paid-10,synthetic,paid,paid,True,0.9400,False,La transferencia ya fue realizada y adjunto el comprobante. Caso sintético 10.
+paid-11,synthetic,paid,paid,True,0.9200,False,El pago fue efectuado esta mañana. Caso sintético 11.
+paid-12,synthetic,paid,paid,True,0.9200,False,La factura ya está pagada. Caso sintético 12.
+paid-13,synthetic,paid,paid,True,0.9400,False,La transferencia ya fue realizada y adjunto el comprobante. Caso sintético 13.
+paid-14,synthetic,paid,paid,True,0.9200,False,El pago fue efectuado esta mañana. Caso sintético 14.
+paid-15,synthetic,paid,paid,True,0.9200,False,La factura ya está pagada. Caso sintético 15.
+paid-16,synthetic,paid,paid,True,0.9400,False,La transferencia ya fue realizada y adjunto el comprobante. Caso sintético 16.
+paid-17,synthetic,paid,paid,True,0.9200,False,El pago fue efectuado esta mañana. Caso sintético 17.
+paid-18,synthetic,paid,paid,True,0.9200,False,La factura ya está pagada. Caso sintético 18.
+paid-19,synthetic,paid,other,False,0.3500,False,Tesorería cerró el saldo ayer.
+paid-20,synthetic,paid,other,False,0.3500,False,La obligación quedó cancelada.
+payment_scheduled-01,synthetic,payment_scheduled,payment_scheduled,True,0.9400,False,El pago quedó programado para el 24/10/2026. Caso sintético 1.
+payment_scheduled-02,synthetic,payment_scheduled,payment_scheduled,True,0.9200,False,La transferencia está programada para el 24/10/2026. Caso sintético 2.
+payment_scheduled-03,synthetic,payment_scheduled,payment_scheduled,True,0.9200,False,La fecha de pago es el 24/10/2026. Caso sintético 3.
+payment_scheduled-04,synthetic,payment_scheduled,payment_scheduled,True,0.9400,False,El pago quedó programado para el 24/10/2026. Caso sintético 4.
+payment_scheduled-05,synthetic,payment_scheduled,payment_scheduled,True,0.9200,False,La transferencia está programada para el 24/10/2026. Caso sintético 5.
+payment_scheduled-06,synthetic,payment_scheduled,payment_scheduled,True,0.9200,False,La fecha de pago es el 24/10/2026. Caso sintético 6.
+payment_scheduled-07,synthetic,payment_scheduled,payment_scheduled,True,0.9400,False,El pago quedó programado para el 24/10/2026. Caso sintético 7.
+payment_scheduled-08,synthetic,payment_scheduled,payment_scheduled,True,0.9200,False,La transferencia está programada para el 24/10/2026. Caso sintético 8.
+payment_scheduled-09,synthetic,payment_scheduled,payment_scheduled,True,0.9200,False,La fecha de pago es el 24/10/2026. Caso sintético 9.
+payment_scheduled-10,synthetic,payment_scheduled,payment_scheduled,True,0.9400,False,El pago quedó programado para el 24/10/2026. Caso sintético 10.
+payment_scheduled-11,synthetic,payment_scheduled,payment_scheduled,True,0.9200,False,La transferencia está programada para el 24/10/2026. Caso sintético 11.
+payment_scheduled-12,synthetic,payment_scheduled,payment_scheduled,True,0.9200,False,La fecha de pago es el 24/10/2026. Caso sintético 12.
+payment_scheduled-13,synthetic,payment_scheduled,payment_scheduled,True,0.9400,False,El pago quedó programado para el 24/10/2026. Caso sintético 13.
+payment_scheduled-14,synthetic,payment_scheduled,payment_scheduled,True,0.9200,False,La transferencia está programada para el 24/10/2026. Caso sintético 14.
+payment_scheduled-15,synthetic,payment_scheduled,payment_scheduled,True,0.9200,False,La fecha de pago es el 24/10/2026. Caso sintético 15.
+payment_scheduled-16,synthetic,payment_scheduled,payment_scheduled,True,0.9400,False,El pago quedó programado para el 24/10/2026. Caso sintético 16.
+payment_scheduled-17,synthetic,payment_scheduled,payment_scheduled,True,0.9200,False,La transferencia está programada para el 24/10/2026. Caso sintético 17.
+payment_scheduled-18,synthetic,payment_scheduled,payment_scheduled,True,0.9200,False,La fecha de pago es el 24/10/2026. Caso sintético 18.
+payment_scheduled-19,synthetic,payment_scheduled,other,False,0.3500,False,Tesorería lo dejó para el próximo viernes.
+payment_scheduled-20,synthetic,payment_scheduled,other,False,0.3500,False,Entrará en la siguiente corrida.
+missing_oc_hes-01,synthetic,missing_oc_hes,missing_oc_hes,True,0.9200,False,Falta la OC para procesar la factura. Caso sintético 1.
+missing_oc_hes-02,synthetic,missing_oc_hes,missing_oc_hes,True,0.9200,False,La factura continúa sin HES. Caso sintético 2.
+missing_oc_hes-03,synthetic,missing_oc_hes,missing_oc_hes,True,0.9200,False,La orden de compra está pendiente. Caso sintético 3.
+missing_oc_hes-04,synthetic,missing_oc_hes,missing_oc_hes,True,0.9200,False,Falta la OC para procesar la factura. Caso sintético 4.
+missing_oc_hes-05,synthetic,missing_oc_hes,missing_oc_hes,True,0.9200,False,La factura continúa sin HES. Caso sintético 5.
+missing_oc_hes-06,synthetic,missing_oc_hes,missing_oc_hes,True,0.9200,False,La orden de compra está pendiente. Caso sintético 6.
+missing_oc_hes-07,synthetic,missing_oc_hes,missing_oc_hes,True,0.9200,False,Falta la OC para procesar la factura. Caso sintético 7.
+missing_oc_hes-08,synthetic,missing_oc_hes,missing_oc_hes,True,0.9200,False,La factura continúa sin HES. Caso sintético 8.
+missing_oc_hes-09,synthetic,missing_oc_hes,missing_oc_hes,True,0.9200,False,La orden de compra está pendiente. Caso sintético 9.
+missing_oc_hes-10,synthetic,missing_oc_hes,missing_oc_hes,True,0.9200,False,Falta la OC para procesar la factura. Caso sintético 10.
+missing_oc_hes-11,synthetic,missing_oc_hes,missing_oc_hes,True,0.9200,False,La factura continúa sin HES. Caso sintético 11.
+missing_oc_hes-12,synthetic,missing_oc_hes,missing_oc_hes,True,0.9200,False,La orden de compra está pendiente. Caso sintético 12.
+missing_oc_hes-13,synthetic,missing_oc_hes,missing_oc_hes,True,0.9200,False,Falta la OC para procesar la factura. Caso sintético 13.
+missing_oc_hes-14,synthetic,missing_oc_hes,missing_oc_hes,True,0.9200,False,La factura continúa sin HES. Caso sintético 14.
+missing_oc_hes-15,synthetic,missing_oc_hes,missing_oc_hes,True,0.9200,False,La orden de compra está pendiente. Caso sintético 15.
+missing_oc_hes-16,synthetic,missing_oc_hes,missing_oc_hes,True,0.9200,False,Falta la OC para procesar la factura. Caso sintético 16.
+missing_oc_hes-17,synthetic,missing_oc_hes,missing_oc_hes,True,0.9200,False,La factura continúa sin HES. Caso sintético 17.
+missing_oc_hes-18,synthetic,missing_oc_hes,missing_oc_hes,True,0.9200,False,La orden de compra está pendiente. Caso sintético 18.
+missing_oc_hes-19,synthetic,missing_oc_hes,other,False,0.3500,False,Requerimos la orden interna antes de contabilizar.
+missing_oc_hes-20,synthetic,missing_oc_hes,other,False,0.3500,False,Aún no emiten la hoja de servicio.
+supplier_data_issue-01,synthetic,supplier_data_issue,supplier_data_issue,True,0.9200,False,El proveedor no está registrado. Caso sintético 1.
+supplier_data_issue-02,synthetic,supplier_data_issue,supplier_data_issue,True,0.9200,False,Los datos bancarios están incorrectos. Caso sintético 2.
+supplier_data_issue-03,synthetic,supplier_data_issue,supplier_data_issue,True,0.9200,False,Se deben actualizar los datos del proveedor. Caso sintético 3.
+supplier_data_issue-04,synthetic,supplier_data_issue,supplier_data_issue,True,0.9200,False,El proveedor no está registrado. Caso sintético 4.
+supplier_data_issue-05,synthetic,supplier_data_issue,supplier_data_issue,True,0.9200,False,Los datos bancarios están incorrectos. Caso sintético 5.
+supplier_data_issue-06,synthetic,supplier_data_issue,supplier_data_issue,True,0.9200,False,Se deben actualizar los datos del proveedor. Caso sintético 6.
+supplier_data_issue-07,synthetic,supplier_data_issue,supplier_data_issue,True,0.9200,False,El proveedor no está registrado. Caso sintético 7.
+supplier_data_issue-08,synthetic,supplier_data_issue,supplier_data_issue,True,0.9200,False,Los datos bancarios están incorrectos. Caso sintético 8.
+supplier_data_issue-09,synthetic,supplier_data_issue,supplier_data_issue,True,0.9200,False,Se deben actualizar los datos del proveedor. Caso sintético 9.
+supplier_data_issue-10,synthetic,supplier_data_issue,supplier_data_issue,True,0.9200,False,El proveedor no está registrado. Caso sintético 10.
+supplier_data_issue-11,synthetic,supplier_data_issue,supplier_data_issue,True,0.9200,False,Los datos bancarios están incorrectos. Caso sintético 11.
+supplier_data_issue-12,synthetic,supplier_data_issue,supplier_data_issue,True,0.9200,False,Se deben actualizar los datos del proveedor. Caso sintético 12.
+supplier_data_issue-13,synthetic,supplier_data_issue,supplier_data_issue,True,0.9200,False,El proveedor no está registrado. Caso sintético 13.
+supplier_data_issue-14,synthetic,supplier_data_issue,supplier_data_issue,True,0.9200,False,Los datos bancarios están incorrectos. Caso sintético 14.
+supplier_data_issue-15,synthetic,supplier_data_issue,supplier_data_issue,True,0.9200,False,Se deben actualizar los datos del proveedor. Caso sintético 15.
+supplier_data_issue-16,synthetic,supplier_data_issue,supplier_data_issue,True,0.9200,False,El proveedor no está registrado. Caso sintético 16.
+supplier_data_issue-17,synthetic,supplier_data_issue,supplier_data_issue,True,0.9200,False,Los datos bancarios están incorrectos. Caso sintético 17.
+supplier_data_issue-18,synthetic,supplier_data_issue,supplier_data_issue,True,0.9200,False,Se deben actualizar los datos del proveedor. Caso sintético 18.
+supplier_data_issue-19,synthetic,supplier_data_issue,other,False,0.3500,False,La ficha maestra requiere corrección.
+supplier_data_issue-20,synthetic,supplier_data_issue,other,False,0.3500,False,No encontramos al emisor en el maestro.
+invoice_disputed-01,synthetic,invoice_disputed,invoice_disputed,True,0.9200,False,La factura fue reclamada por recepción. Caso sintético 1.
+invoice_disputed-02,synthetic,invoice_disputed,invoice_disputed,True,0.9200,False,La factura está rechazada. Caso sintético 2.
+invoice_disputed-03,synthetic,invoice_disputed,invoice_disputed,True,0.9200,False,Existe rechazo de la factura. Caso sintético 3.
+invoice_disputed-04,synthetic,invoice_disputed,invoice_disputed,True,0.9200,False,La factura fue reclamada por recepción. Caso sintético 4.
+invoice_disputed-05,synthetic,invoice_disputed,invoice_disputed,True,0.9200,False,La factura está rechazada. Caso sintético 5.
+invoice_disputed-06,synthetic,invoice_disputed,invoice_disputed,True,0.9200,False,Existe rechazo de la factura. Caso sintético 6.
+invoice_disputed-07,synthetic,invoice_disputed,invoice_disputed,True,0.9200,False,La factura fue reclamada por recepción. Caso sintético 7.
+invoice_disputed-08,synthetic,invoice_disputed,invoice_disputed,True,0.9200,False,La factura está rechazada. Caso sintético 8.
+invoice_disputed-09,synthetic,invoice_disputed,invoice_disputed,True,0.9200,False,Existe rechazo de la factura. Caso sintético 9.
+invoice_disputed-10,synthetic,invoice_disputed,invoice_disputed,True,0.9200,False,La factura fue reclamada por recepción. Caso sintético 10.
+invoice_disputed-11,synthetic,invoice_disputed,invoice_disputed,True,0.9200,False,La factura está rechazada. Caso sintético 11.
+invoice_disputed-12,synthetic,invoice_disputed,invoice_disputed,True,0.9200,False,Existe rechazo de la factura. Caso sintético 12.
+invoice_disputed-13,synthetic,invoice_disputed,invoice_disputed,True,0.9200,False,La factura fue reclamada por recepción. Caso sintético 13.
+invoice_disputed-14,synthetic,invoice_disputed,invoice_disputed,True,0.9200,False,La factura está rechazada. Caso sintético 14.
+invoice_disputed-15,synthetic,invoice_disputed,invoice_disputed,True,0.9200,False,Existe rechazo de la factura. Caso sintético 15.
+invoice_disputed-16,synthetic,invoice_disputed,invoice_disputed,True,0.9200,False,La factura fue reclamada por recepción. Caso sintético 16.
+invoice_disputed-17,synthetic,invoice_disputed,invoice_disputed,True,0.9200,False,La factura está rechazada. Caso sintético 17.
+invoice_disputed-18,synthetic,invoice_disputed,invoice_disputed,True,0.9200,False,Existe rechazo de la factura. Caso sintético 18.
+invoice_disputed-19,synthetic,invoice_disputed,other,False,0.3500,False,El documento tributario presenta reparos.
+invoice_disputed-20,synthetic,invoice_disputed,other,False,0.3500,False,Contabilidad devolvió el documento.
+payment_promise-01,synthetic,payment_promise,payment_promise,True,0.9200,False,Pagaremos el 24/10/2026. Caso sintético 1.
+payment_promise-02,synthetic,payment_promise,payment_promise,True,0.9200,False,Tenemos un compromiso de pago para el viernes. Caso sintético 2.
+payment_promise-03,synthetic,payment_promise,payment_promise,True,0.9200,False,Nos comprometemos a pagar durante esta semana. Caso sintético 3.
+payment_promise-04,synthetic,payment_promise,payment_promise,True,0.9200,False,Pagaremos el 24/10/2026. Caso sintético 4.
+payment_promise-05,synthetic,payment_promise,payment_promise,True,0.9200,False,Tenemos un compromiso de pago para el viernes. Caso sintético 5.
+payment_promise-06,synthetic,payment_promise,payment_promise,True,0.9200,False,Nos comprometemos a pagar durante esta semana. Caso sintético 6.
+payment_promise-07,synthetic,payment_promise,payment_promise,True,0.9200,False,Pagaremos el 24/10/2026. Caso sintético 7.
+payment_promise-08,synthetic,payment_promise,payment_promise,True,0.9200,False,Tenemos un compromiso de pago para el viernes. Caso sintético 8.
+payment_promise-09,synthetic,payment_promise,payment_promise,True,0.9200,False,Nos comprometemos a pagar durante esta semana. Caso sintético 9.
+payment_promise-10,synthetic,payment_promise,payment_promise,True,0.9200,False,Pagaremos el 24/10/2026. Caso sintético 10.
+payment_promise-11,synthetic,payment_promise,payment_promise,True,0.9200,False,Tenemos un compromiso de pago para el viernes. Caso sintético 11.
+payment_promise-12,synthetic,payment_promise,payment_promise,True,0.9200,False,Nos comprometemos a pagar durante esta semana. Caso sintético 12.
+payment_promise-13,synthetic,payment_promise,payment_promise,True,0.9200,False,Pagaremos el 24/10/2026. Caso sintético 13.
+payment_promise-14,synthetic,payment_promise,payment_promise,True,0.9200,False,Tenemos un compromiso de pago para el viernes. Caso sintético 14.
+payment_promise-15,synthetic,payment_promise,payment_promise,True,0.9200,False,Nos comprometemos a pagar durante esta semana. Caso sintético 15.
+payment_promise-16,synthetic,payment_promise,payment_promise,True,0.9200,False,Pagaremos el 24/10/2026. Caso sintético 16.
+payment_promise-17,synthetic,payment_promise,payment_promise,True,0.9200,False,Tenemos un compromiso de pago para el viernes. Caso sintético 17.
+payment_promise-18,synthetic,payment_promise,payment_promise,True,0.9200,False,Nos comprometemos a pagar durante esta semana. Caso sintético 18.
+payment_promise-19,synthetic,payment_promise,other,False,0.3500,False,La cancelaremos durante la próxima semana.
+payment_promise-20,synthetic,payment_promise,other,False,0.3500,False,Quedó el compromiso para el viernes.
+dispute-01,synthetic,dispute,dispute,True,0.9200,False,El monto no corresponde al servicio recibido. Caso sintético 1.
+dispute-02,synthetic,dispute,dispute,True,0.9200,False,Existe una discrepancia comercial. Caso sintético 2.
+dispute-03,synthetic,dispute,dispute,True,0.9200,False,No reconocemos la deuda informada. Caso sintético 3.
+dispute-04,synthetic,dispute,dispute,True,0.9200,False,El monto no corresponde al servicio recibido. Caso sintético 4.
+dispute-05,synthetic,dispute,dispute,True,0.9200,False,Existe una discrepancia comercial. Caso sintético 5.
+dispute-06,synthetic,dispute,dispute,True,0.9200,False,No reconocemos la deuda informada. Caso sintético 6.
+dispute-07,synthetic,dispute,dispute,True,0.9200,False,El monto no corresponde al servicio recibido. Caso sintético 7.
+dispute-08,synthetic,dispute,dispute,True,0.9200,False,Existe una discrepancia comercial. Caso sintético 8.
+dispute-09,synthetic,dispute,dispute,True,0.9200,False,No reconocemos la deuda informada. Caso sintético 9.
+dispute-10,synthetic,dispute,dispute,True,0.9200,False,El monto no corresponde al servicio recibido. Caso sintético 10.
+dispute-11,synthetic,dispute,dispute,True,0.9200,False,Existe una discrepancia comercial. Caso sintético 11.
+dispute-12,synthetic,dispute,dispute,True,0.9200,False,No reconocemos la deuda informada. Caso sintético 12.
+dispute-13,synthetic,dispute,dispute,True,0.9200,False,El monto no corresponde al servicio recibido. Caso sintético 13.
+dispute-14,synthetic,dispute,dispute,True,0.9200,False,Existe una discrepancia comercial. Caso sintético 14.
+dispute-15,synthetic,dispute,dispute,True,0.9200,False,No reconocemos la deuda informada. Caso sintético 15.
+dispute-16,synthetic,dispute,dispute,True,0.9200,False,El monto no corresponde al servicio recibido. Caso sintético 16.
+dispute-17,synthetic,dispute,dispute,True,0.9200,False,Existe una discrepancia comercial. Caso sintético 17.
+dispute-18,synthetic,dispute,dispute,True,0.9200,False,No reconocemos la deuda informada. Caso sintético 18.
+dispute-19,synthetic,dispute,other,False,0.3500,False,Tenemos diferencias con lo facturado.
+dispute-20,synthetic,dispute,other,False,0.3500,False,El valor informado debe revisarse.
+document_request-01,synthetic,document_request,document_request,True,0.9200,False,Necesitamos que envíe la factura en PDF. Caso sintético 1.
+document_request-02,synthetic,document_request,document_request,True,0.9200,False,Solicitamos la HES asociada. Caso sintético 2.
+document_request-03,synthetic,document_request,document_request,True,0.9200,False,Por favor adjuntar el certificado requerido. Caso sintético 3.
+document_request-04,synthetic,document_request,document_request,True,0.9200,False,Necesitamos que envíe la factura en PDF. Caso sintético 4.
+document_request-05,synthetic,document_request,document_request,True,0.9200,False,Solicitamos la HES asociada. Caso sintético 5.
+document_request-06,synthetic,document_request,document_request,True,0.9200,False,Por favor adjuntar el certificado requerido. Caso sintético 6.
+document_request-07,synthetic,document_request,document_request,True,0.9200,False,Necesitamos que envíe la factura en PDF. Caso sintético 7.
+document_request-08,synthetic,document_request,document_request,True,0.9200,False,Solicitamos la HES asociada. Caso sintético 8.
+document_request-09,synthetic,document_request,document_request,True,0.9200,False,Por favor adjuntar el certificado requerido. Caso sintético 9.
+document_request-10,synthetic,document_request,document_request,True,0.9200,False,Necesitamos que envíe la factura en PDF. Caso sintético 10.
+document_request-11,synthetic,document_request,document_request,True,0.9200,False,Solicitamos la HES asociada. Caso sintético 11.
+document_request-12,synthetic,document_request,document_request,True,0.9200,False,Por favor adjuntar el certificado requerido. Caso sintético 12.
+document_request-13,synthetic,document_request,document_request,True,0.9200,False,Necesitamos que envíe la factura en PDF. Caso sintético 13.
+document_request-14,synthetic,document_request,document_request,True,0.9200,False,Solicitamos la HES asociada. Caso sintético 14.
+document_request-15,synthetic,document_request,document_request,True,0.9200,False,Por favor adjuntar el certificado requerido. Caso sintético 15.
+document_request-16,synthetic,document_request,document_request,True,0.9200,False,Necesitamos que envíe la factura en PDF. Caso sintético 16.
+document_request-17,synthetic,document_request,document_request,True,0.9200,False,Solicitamos la HES asociada. Caso sintético 17.
+document_request-18,synthetic,document_request,document_request,True,0.9200,False,Por favor adjuntar el certificado requerido. Caso sintético 18.
+document_request-19,synthetic,document_request,other,False,0.3500,False,¿Nos comparten el respaldo asociado?
+document_request-20,synthetic,document_request,other,False,0.3500,False,Requerimos los antecedentes del servicio.
+wrong_contact-01,synthetic,wrong_contact,wrong_contact,True,0.9200,False,Este es un contacto equivocado. Caso sintético 1.
+wrong_contact-02,synthetic,wrong_contact,wrong_contact,True,0.9200,False,Este correo no corresponde a este contacto. Caso sintético 2.
+wrong_contact-03,synthetic,wrong_contact,wrong_contact,True,0.9200,False,Contacte a la casilla central de proveedores. Caso sintético 3.
+wrong_contact-04,synthetic,wrong_contact,wrong_contact,True,0.9200,False,Este es un contacto equivocado. Caso sintético 4.
+wrong_contact-05,synthetic,wrong_contact,wrong_contact,True,0.9200,False,Este correo no corresponde a este contacto. Caso sintético 5.
+wrong_contact-06,synthetic,wrong_contact,wrong_contact,True,0.9200,False,Contacte a la casilla central de proveedores. Caso sintético 6.
+wrong_contact-07,synthetic,wrong_contact,wrong_contact,True,0.9200,False,Este es un contacto equivocado. Caso sintético 7.
+wrong_contact-08,synthetic,wrong_contact,wrong_contact,True,0.9200,False,Este correo no corresponde a este contacto. Caso sintético 8.
+wrong_contact-09,synthetic,wrong_contact,wrong_contact,True,0.9200,False,Contacte a la casilla central de proveedores. Caso sintético 9.
+wrong_contact-10,synthetic,wrong_contact,wrong_contact,True,0.9200,False,Este es un contacto equivocado. Caso sintético 10.
+wrong_contact-11,synthetic,wrong_contact,wrong_contact,True,0.9200,False,Este correo no corresponde a este contacto. Caso sintético 11.
+wrong_contact-12,synthetic,wrong_contact,wrong_contact,True,0.9200,False,Contacte a la casilla central de proveedores. Caso sintético 12.
+wrong_contact-13,synthetic,wrong_contact,wrong_contact,True,0.9200,False,Este es un contacto equivocado. Caso sintético 13.
+wrong_contact-14,synthetic,wrong_contact,wrong_contact,True,0.9200,False,Este correo no corresponde a este contacto. Caso sintético 14.
+wrong_contact-15,synthetic,wrong_contact,wrong_contact,True,0.9200,False,Contacte a la casilla central de proveedores. Caso sintético 15.
+wrong_contact-16,synthetic,wrong_contact,wrong_contact,True,0.9200,False,Este es un contacto equivocado. Caso sintético 16.
+wrong_contact-17,synthetic,wrong_contact,wrong_contact,True,0.9200,False,Este correo no corresponde a este contacto. Caso sintético 17.
+wrong_contact-18,synthetic,wrong_contact,wrong_contact,True,0.9200,False,Contacte a la casilla central de proveedores. Caso sintético 18.
+wrong_contact-19,synthetic,wrong_contact,other,False,0.3500,False,Esta casilla no gestiona pagos.
+wrong_contact-20,synthetic,wrong_contact,other,False,0.3500,False,Debe verlo otra unidad.
+other-01,synthetic,other,other,True,0.3500,False,"Gracias, revisaremos internamente y volveremos con información. Caso sintético 1."
+other-02,synthetic,other,other,True,0.3500,False,El caso fue recibido por nuestro equipo. Caso sintético 2.
+other-03,synthetic,other,other,True,0.3500,False,Por ahora no tenemos nuevos antecedentes. Caso sintético 3.
+other-04,synthetic,other,other,True,0.3500,False,"Gracias, revisaremos internamente y volveremos con información. Caso sintético 4."
+other-05,synthetic,other,other,True,0.3500,False,El caso fue recibido por nuestro equipo. Caso sintético 5.
+other-06,synthetic,other,other,True,0.3500,False,Por ahora no tenemos nuevos antecedentes. Caso sintético 6.
+other-07,synthetic,other,other,True,0.3500,False,"Gracias, revisaremos internamente y volveremos con información. Caso sintético 7."
+other-08,synthetic,other,other,True,0.3500,False,El caso fue recibido por nuestro equipo. Caso sintético 8.
+other-09,synthetic,other,other,True,0.3500,False,Por ahora no tenemos nuevos antecedentes. Caso sintético 9.
+other-10,synthetic,other,other,True,0.3500,False,"Gracias, revisaremos internamente y volveremos con información. Caso sintético 10."
+other-11,synthetic,other,other,True,0.3500,False,El caso fue recibido por nuestro equipo. Caso sintético 11.
+other-12,synthetic,other,other,True,0.3500,False,Por ahora no tenemos nuevos antecedentes. Caso sintético 12.
+other-13,synthetic,other,other,True,0.3500,False,"Gracias, revisaremos internamente y volveremos con información. Caso sintético 13."
+other-14,synthetic,other,other,True,0.3500,False,El caso fue recibido por nuestro equipo. Caso sintético 14.
+other-15,synthetic,other,other,True,0.3500,False,Por ahora no tenemos nuevos antecedentes. Caso sintético 15.
+other-16,synthetic,other,other,True,0.3500,False,"Gracias, revisaremos internamente y volveremos con información. Caso sintético 16."
+other-17,synthetic,other,other,True,0.3500,False,El caso fue recibido por nuestro equipo. Caso sintético 17.
+other-18,synthetic,other,other,True,0.3500,False,Por ahora no tenemos nuevos antecedentes. Caso sintético 18.
+other-19,synthetic,other,paid,False,0.9200,False,Adjunto el comprobante solo como referencia histórica.
+other-20,synthetic,other,payment_scheduled,False,0.9200,False,La fecha de pago del contrato no aplica a esta consulta.

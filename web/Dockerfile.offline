@@ -1,0 +1,12 @@
+# Reutiliza una imagen local que ya contiene Next.js 16.3.5 y React.
+# No realiza descargas. El Dockerfile estándar sigue siendo la definición portable.
+FROM faenafix-frontend:latest
+
+WORKDIR /workspace
+COPY . .
+ENV NODE_PATH=/app/node_modules
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN cp -a /app/node_modules /workspace/node_modules
+RUN /workspace/node_modules/.bin/next build
+CMD ["/workspace/node_modules/.bin/next", "start", "--hostname", "0.0.0.0"]
+

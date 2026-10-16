@@ -1,0 +1,10 @@
+[
+  {"rut":"96000111-7","legal_name":"Minera Horizonte S.A.","requires_purchase_order":true,"requires_hes":true,"requires_delivery_note":false,"requires_supplier_portal":true,"risk_days_before_due":10,"payment_cycle":"Viernes","portal":"https://proveedores.minera-horizonte.demo"},
+  {"rut":"96000222-9","legal_name":"Retail Pórtico S.A.","requires_purchase_order":true,"requires_hes":false,"requires_delivery_note":true,"requires_supplier_portal":true,"risk_days_before_due":7,"payment_cycle":"Días 10 y 25","portal":"https://proveedores.portico.demo"},
+  {"rut":"96000333-0","legal_name":"Energía Austral SpA","requires_purchase_order":true,"requires_hes":true,"requires_delivery_note":false,"requires_supplier_portal":false,"risk_days_before_due":7,"payment_cycle":"Último día hábil","portal":null},
+  {"rut":"96000444-2","legal_name":"Constructora Valle Central S.A.","requires_purchase_order":true,"requires_hes":true,"requires_delivery_note":true,"requires_supplier_portal":true,"risk_days_before_due":12,"payment_cycle":"Jueves","portal":"https://portal.valle-central.demo"},
+  {"rut":"96000555-4","legal_name":"Alimentos Pacífico Ltda.","requires_purchase_order":true,"requires_hes":false,"requires_delivery_note":true,"requires_supplier_portal":false,"risk_days_before_due":5,"payment_cycle":"Quincenal","portal":null},
+  {"rut":"96000666-6","legal_name":"Celulosa Bosques del Sur S.A.","requires_purchase_order":true,"requires_hes":true,"requires_delivery_note":false,"requires_supplier_portal":true,"risk_days_before_due":10,"payment_cycle":"Días 5 y 20","portal":"https://cxp.bosques-sur.demo"},
+  {"rut":"96000777-8","legal_name":"Logística Andina SpA","requires_purchase_order":false,"requires_hes":false,"requires_delivery_note":true,"requires_supplier_portal":false,"risk_days_before_due":5,"payment_cycle":"Semanal","portal":null},
+  {"rut":"96000888-K","legal_name":"Clínica Metropolitana S.A.","requires_purchase_order":true,"requires_hes":true,"requires_delivery_note":false,"requires_supplier_portal":true,"risk_days_before_due":15,"payment_cycle":"Mensual","portal":"https://proveedores.clinica-metropolitana.demo"}
+]

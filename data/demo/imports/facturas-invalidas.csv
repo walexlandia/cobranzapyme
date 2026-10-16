@@ -1,0 +1,8 @@
+RUT receptor;Razón social;Tipo documento;Folio;Fecha emisión;Fecha vencimiento;Monto total;Moneda;OC
+76.086.428-4;Pagador con RUT inválido;factura;ERR-001;2026-10-01;2026-10-31;500000;CLP;
+96000111-7;Minera Horizonte S.A.;factura;;2026-10-01;2026-10-31;500000;CLP;OC-1
+96000111-7;Minera Horizonte S.A.;factura;ERR-003;2026-10-20;2026-10-10;500000;CLP;OC-2
+96000222-9;Retail Pórtico S.A.;factura;ERR-004;2026-10-01;2026-10-31;0;CLP;OC-3
+96000222-9;Retail Pórtico S.A.;factura;ERR-005;2026-10-01;2026-10-31;-100000;CLP;OC-4
+96000333-0;Energía Austral SpA;factura;DUP-001;2026-10-01;2026-10-31;300000;CLP;OC-5
+96000333-0;Energía Austral SpA;factura;DUP-001;2026-10-02;2026-11-01;300000;CLP;OC-6

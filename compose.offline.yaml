@@ -1,0 +1,20 @@
+services:
+  minio:
+    profiles: ["external-image"]
+
+  api:
+    profiles: ["external-image"]
+
+  worker:
+    profiles: ["external-image"]
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile.offline
+    command: /app/node_modules/.bin/next dev --hostname 0.0.0.0
+    volumes:
+      - ./web:/workspace
+    working_dir: /workspace
+    depends_on: !reset []
+

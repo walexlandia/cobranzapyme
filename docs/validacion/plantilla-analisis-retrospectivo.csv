@@ -1,0 +1,2 @@
+invoice_id,payer_rut,payer_name,issued_on,due_on,paid_on,total_amount,accepted_on,claimed_on,purchase_order_required,purchase_order_available_on,hes_required,hes_available_on,portal_required,portal_uploaded_on,first_problem_known_on,delay_cause,cause_evidence,commercial_dispute,payment_promise_on
+
