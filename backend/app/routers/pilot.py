@@ -2,10 +2,10 @@ import hashlib
 import json
 import re
 import uuid
-from datetime import date
+from datetime import date, datetime, timezone
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from pydantic import EmailStr
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
@@ -19,16 +19,23 @@ from app.models import (
     Contact,
     Contract,
     Document,
+    Invoice,
     MessageTemplate,
     PilotAuthorizationEvent,
+    PilotLogEntry,
     User,
 )
 from app.schemas import (
+    DemoWalkthroughView,
     PilotAuthorizationRevoke,
     PilotAuthorizationView,
+    PilotLogCreate,
+    PilotLogEntryView,
+    PilotLogResolve,
     PilotReadinessView,
 )
 from app.security import require_roles
+from app.services.pilot_operations import build_demo_walkthrough
 
 
 router = APIRouter(prefix="/api/v1/pilot", tags=["pilot-readiness"])
@@ -295,3 +302,148 @@ def pilot_readiness(
         "required_channels": channels,
         "authorization": latest,
     }
+
+
+@router.get("/log", response_model=list[PilotLogEntryView])
+def list_pilot_log(
+    _: Operator,
+    db: Annotated[Session, Depends(get_db)],
+    client_id: uuid.UUID,
+    status: Annotated[str | None, Query(pattern="^(open|resolved)$")] = None,
+    entry_type: Annotated[
+        str | None,
+        Query(pattern="^(decision|incident|manual_work|rule_change|learning)$"),
+    ] = None,
+) -> list[PilotLogEntry]:
+    query = select(PilotLogEntry).where(PilotLogEntry.client_id == client_id)
+    if status is not None:
+        query = query.where(PilotLogEntry.status == status)
+    if entry_type is not None:
+        query = query.where(PilotLogEntry.entry_type == entry_type)
+    return list(
+        db.scalars(
+            query.order_by(
+                PilotLogEntry.occurred_on.desc(),
+                PilotLogEntry.created_at.desc(),
+                PilotLogEntry.id.desc(),
+            ).limit(500)
+        )
+    )
+
+
+@router.post("/log", response_model=PilotLogEntryView, status_code=201)
+def create_pilot_log_entry(
+    payload: PilotLogCreate,
+    user: Operator,
+    db: Annotated[Session, Depends(get_db)],
+) -> PilotLogEntry:
+    client = db.get(Client, payload.client_id)
+    if client is None or not client.active:
+        raise HTTPException(status_code=404, detail="Cliente no encontrado")
+    if payload.related_invoice_id is not None:
+        invoice = db.scalar(
+            select(Invoice).where(
+                Invoice.id == payload.related_invoice_id,
+                Invoice.client_id == payload.client_id,
+            )
+        )
+        if invoice is None:
+            raise HTTPException(status_code=404, detail="Factura relacionada no encontrada")
+    created_at = datetime.now(timezone.utc)
+    immediately_closed = payload.entry_type != "incident"
+    entry = PilotLogEntry(
+        client_id=payload.client_id,
+        related_invoice_id=payload.related_invoice_id,
+        entry_type=payload.entry_type,
+        severity=payload.severity,
+        title=payload.title.strip(),
+        detail=payload.detail.strip(),
+        status="resolved" if immediately_closed else "open",
+        occurred_on=payload.occurred_on,
+        human_minutes=payload.human_minutes,
+        created_by=user.id,
+        resolved_by=user.id if immediately_closed else None,
+        resolved_at=created_at if immediately_closed else None,
+        resolution_note="Registro completo al crear." if immediately_closed else None,
+    )
+    db.add(entry)
+    db.flush()
+    record_event(
+        db,
+        client_id=entry.client_id,
+        invoice_id=entry.related_invoice_id,
+        event_type="pilot.log_recorded",
+        actor_type=ActorType.HUMAN,
+        actor_id=user.id,
+        mode="manual",
+        payload={
+            "pilot_log_entry_id": str(entry.id),
+            "entry_type": entry.entry_type,
+            "severity": entry.severity,
+            "title": entry.title,
+            "occurred_on": entry.occurred_on.isoformat(),
+            "human_minutes": str(entry.human_minutes),
+            "status": entry.status,
+        },
+    )
+    db.commit()
+    db.refresh(entry)
+    return entry
+
+
+@router.post("/log/{entry_id}/resolve", response_model=PilotLogEntryView)
+def resolve_pilot_log_entry(
+    entry_id: uuid.UUID,
+    payload: PilotLogResolve,
+    user: Operator,
+    db: Annotated[Session, Depends(get_db)],
+) -> PilotLogEntry:
+    entry = db.scalar(
+        select(PilotLogEntry)
+        .where(
+            PilotLogEntry.id == entry_id,
+            PilotLogEntry.client_id == payload.client_id,
+        )
+        .with_for_update()
+    )
+    if entry is None:
+        raise HTTPException(status_code=404, detail="Registro del piloto no encontrado")
+    if entry.status != "open":
+        raise HTTPException(status_code=409, detail="El registro ya está resuelto")
+    entry.status = "resolved"
+    entry.resolved_by = user.id
+    entry.resolved_at = datetime.now(timezone.utc)
+    entry.resolution_note = payload.resolution_note.strip()
+    record_event(
+        db,
+        client_id=entry.client_id,
+        invoice_id=entry.related_invoice_id,
+        event_type="pilot.log_resolved",
+        actor_type=ActorType.HUMAN,
+        actor_id=user.id,
+        mode="manual",
+        payload={
+            "pilot_log_entry_id": str(entry.id),
+            "resolution_note": entry.resolution_note,
+        },
+    )
+    db.commit()
+    db.refresh(entry)
+    return entry
+
+
+@router.get("/demo-walkthrough", response_model=DemoWalkthroughView)
+def demo_walkthrough(
+    _: Operator,
+    db: Annotated[Session, Depends(get_db)],
+    client_id: uuid.UUID,
+    operation_date: Annotated[date | None, Query()] = None,
+) -> dict:
+    client = db.get(Client, client_id)
+    if client is None or not client.active:
+        raise HTTPException(status_code=404, detail="Cliente no encontrado")
+    return build_demo_walkthrough(
+        db,
+        client=client,
+        operation_date=operation_date or date.today(),
+    )

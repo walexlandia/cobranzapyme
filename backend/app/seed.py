@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 
 from sqlalchemy import select
@@ -7,7 +7,19 @@ from app.audit import record_event
 from app.config import settings
 from app.database import SessionLocal
 from app.domain import ActorType, InvoiceStatus, Role
-from app.models import Client, Contact, Contract, DelayCause, Invoice, MessageTemplate, PayabilityItem, Payer, User
+from app.models import (
+    Client,
+    Contact,
+    Contract,
+    DelayCause,
+    ExceptionCase,
+    Invoice,
+    MessageTemplate,
+    PayabilityItem,
+    Payer,
+    PilotLogEntry,
+    User,
+)
 from app.schemas import (
     ContractRules,
     InboundAttachmentCreate,
@@ -410,7 +422,7 @@ def seed() -> None:
             )
             if contact is None or contact.email is None:
                 continue
-            register_inbound_message(
+            inbound = register_inbound_message(
                 db,
                 InboundMessageCreate(
                     client_id=client.id,
@@ -432,6 +444,101 @@ def seed() -> None:
                     ],
                 ),
             )
+            case = db.scalar(
+                select(ExceptionCase).where(ExceptionCase.message_id == inbound.id)
+            )
+            if case is not None and not (case.detail or {}).get("client_escalation"):
+                escalated_at = datetime.now(timezone.utc)
+                case.priority = 100
+                case.detail = {
+                    **(case.detail or {}),
+                    "client_escalation": {
+                        "note": (
+                            "Confirma si la factura fue aceptada para el próximo ciclo "
+                            "de pago o entrega antecedentes adicionales."
+                        ),
+                        "actor_id": str(admin.id),
+                        "created_at": escalated_at.isoformat(),
+                        "external_delivery": False,
+                        "demo": True,
+                    },
+                }
+                record_event(
+                    db,
+                    client_id=client.id,
+                    invoice_id=invoice.id,
+                    event_type="exception.escalated_to_client",
+                    actor_type=ActorType.SYSTEM,
+                    mode="simulation",
+                    payload={
+                        "exception_id": str(case.id),
+                        "external_delivery": False,
+                        "demo": True,
+                    },
+                )
+            demo_entries = [
+                (
+                    "decision",
+                    "info",
+                    "Mantener revisión humana de compromisos sin fecha",
+                    "Decisión sintética: no automatizar respuestas ambiguas durante el piloto.",
+                    Decimal("4"),
+                ),
+                (
+                    "incident",
+                    "warning",
+                    "Documento pendiente bloquea pagabilidad",
+                    "Incidencia sintética abierta para demostrar seguimiento y resolución.",
+                    Decimal("6"),
+                ),
+                (
+                    "manual_work",
+                    "info",
+                    "Revisión semanal de cartera",
+                    "Trabajo manual sintético registrado fuera de los flujos automáticos.",
+                    Decimal("18"),
+                ),
+            ]
+            for entry_type, severity, title, detail, minutes in demo_entries:
+                existing_entry = db.scalar(
+                    select(PilotLogEntry).where(
+                        PilotLogEntry.client_id == client.id,
+                        PilotLogEntry.title == title,
+                    )
+                )
+                if existing_entry is not None:
+                    continue
+                closed = entry_type != "incident"
+                entry = PilotLogEntry(
+                    client_id=client.id,
+                    related_invoice_id=invoice.id,
+                    entry_type=entry_type,
+                    severity=severity,
+                    title=title,
+                    detail=detail,
+                    status="resolved" if closed else "open",
+                    occurred_on=date.today() - timedelta(days=client_index + 1),
+                    human_minutes=minutes,
+                    created_by=admin.id,
+                    resolved_by=admin.id if closed else None,
+                    resolved_at=datetime.now(timezone.utc) if closed else None,
+                    resolution_note="Registro sintético completo." if closed else None,
+                )
+                db.add(entry)
+                db.flush()
+                record_event(
+                    db,
+                    client_id=client.id,
+                    invoice_id=invoice.id,
+                    event_type="pilot.log_recorded",
+                    actor_type=ActorType.SYSTEM,
+                    mode="simulation",
+                    payload={
+                        "pilot_log_entry_id": str(entry.id),
+                        "entry_type": entry.entry_type,
+                        "demo": True,
+                    },
+                )
         db.commit()
 
 

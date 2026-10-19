@@ -123,6 +123,15 @@ El incremento 7.3 agrega:
 - exportación CSV y vista cliente limitada a resultados, sin economía interna;
 - supuestos económicos editables y datos de prueba sintéticos con resultados verificables.
 
+El incremento 7.4 cierra el alcance técnico local de la fase 7 con:
+
+- bitácora por cliente para decisiones, incidencias, trabajo manual, cambios de reglas y aprendizajes;
+- resolución trazable de incidentes y minutos humanos incorporados a las métricas;
+- respuesta de la pyme a excepciones escaladas, aislada por cliente y sin acciones automáticas irreversibles;
+- fecha controlada y recorrido demostrable de seis etapas sin manipular directamente la base de datos;
+- datos sintéticos idempotentes para recorrer la operación;
+- runbook, guion de demostración y checklist de preparación G4, manteniendo la decisión final pendiente de evidencia real.
+
 ## Servicios
 
 - `db`: PostgreSQL 16.
@@ -182,6 +191,6 @@ Los CSV listos para importar están en `data/demo/imports`. Incluyen tres pymes 
 - `docs/fase-4/estado.md`: avance y límites de la operación multicanal simulada.
 - `docs/fase-5/estado.md`: clasificación supervisada, evaluación y puerta de automatización.
 - `docs/fase-6/estado.md`: pagos manuales, cartolas y conciliación supervisada.
-- `docs/fase-7/estado.md`: vista cliente, documentos, métricas y próximos incrementos del piloto asistido.
+- `docs/fase-7/estado.md`: cierre local de vista cliente, documentos, métricas y operación demostrable del piloto asistido.
 - `examples/`: archivos de facturas y contactos para probar las importaciones.
 

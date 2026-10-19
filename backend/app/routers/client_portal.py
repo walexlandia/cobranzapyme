@@ -2,20 +2,30 @@ import csv
 import io
 import re
 import uuid
-from datetime import date
+from datetime import date, datetime, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Response, UploadFile
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.audit import record_event
 from app.database import get_db
-from app.domain import Role
-from app.models import Client, ClientDocumentSubmission, Invoice, PayabilityItem, User
+from app.domain import ActorType, Role
+from app.models import (
+    Client,
+    ClientDocumentSubmission,
+    ExceptionCase,
+    Invoice,
+    PayabilityItem,
+    User,
+)
 from app.routers.invoices import _authorized_client
 from app.schemas import (
     ClientDocumentReviewCommand,
     ClientDocumentSubmissionView,
+    ClientEscalatedExceptionView,
+    ClientExceptionResponseCreate,
     ClientPortalSummaryView,
     WeeklyClientReportView,
 )
@@ -227,3 +237,110 @@ def review_client_document(
     db.commit()
     db.refresh(submission)
     return submission_view(db, submission)
+
+
+def _escalated_exception_view(
+    db: Session,
+    case: ExceptionCase,
+) -> dict:
+    escalation = (case.detail or {}).get("client_escalation", {})
+    invoice = db.get(Invoice, case.invoice_id) if case.invoice_id else None
+    raw_escalated_at = escalation.get("created_at")
+    try:
+        escalated_at = datetime.fromisoformat(raw_escalated_at)
+    except (TypeError, ValueError):
+        escalated_at = case.created_at
+    return {
+        "id": case.id,
+        "client_id": case.client_id,
+        "invoice_id": case.invoice_id,
+        "invoice_folio": invoice.folio if invoice else None,
+        "payer_name": invoice.payer_name if invoice else None,
+        "kind": case.kind,
+        "priority": case.priority,
+        "note": escalation.get("note", "Excepción escalada a la pyme."),
+        "escalated_at": escalated_at,
+        "response": (case.detail or {}).get("client_response"),
+    }
+
+
+@router.get(
+    "/escalated-exceptions",
+    response_model=list[ClientEscalatedExceptionView],
+)
+def list_client_escalated_exceptions(
+    user: CurrentUser,
+    db: Annotated[Session, Depends(get_db)],
+    client_id: Annotated[uuid.UUID | None, Query()] = None,
+) -> list[dict]:
+    scoped_client = _authorized_client(user, client_id)
+    cases = list(
+        db.scalars(
+            select(ExceptionCase)
+            .where(
+                ExceptionCase.client_id == scoped_client,
+                ExceptionCase.status == "open",
+            )
+            .order_by(ExceptionCase.priority.desc(), ExceptionCase.created_at)
+        )
+    )
+    return [
+        _escalated_exception_view(db, case)
+        for case in cases
+        if (case.detail or {}).get("client_escalation")
+    ]
+
+
+@router.post(
+    "/escalated-exceptions/{exception_id}/response",
+    response_model=ClientEscalatedExceptionView,
+)
+def respond_to_escalated_exception(
+    exception_id: uuid.UUID,
+    payload: ClientExceptionResponseCreate,
+    user: ClientUser,
+    db: Annotated[Session, Depends(get_db)],
+) -> dict:
+    if user.client_id is None:
+        raise HTTPException(status_code=403, detail="Usuario cliente sin empresa")
+    case = db.scalar(
+        select(ExceptionCase)
+        .where(
+            ExceptionCase.id == exception_id,
+            ExceptionCase.client_id == user.client_id,
+            ExceptionCase.status == "open",
+        )
+        .with_for_update()
+    )
+    if case is None:
+        raise HTTPException(status_code=404, detail="Excepción escalada no encontrada")
+    detail = dict(case.detail or {})
+    if not detail.get("client_escalation"):
+        raise HTTPException(status_code=409, detail="La excepción no fue escalada a la pyme")
+    if detail.get("client_response"):
+        raise HTTPException(status_code=409, detail="La excepción ya tiene respuesta de la pyme")
+    responded_at = datetime.now(timezone.utc)
+    detail["client_response"] = {
+        "response_type": payload.response_type,
+        "message": payload.message.strip(),
+        "submitted_by": str(user.id),
+        "submitted_at": responded_at.isoformat(),
+    }
+    case.detail = detail
+    record_event(
+        db,
+        client_id=case.client_id,
+        invoice_id=case.invoice_id,
+        event_type="exception.client_responded",
+        actor_type=ActorType.HUMAN,
+        actor_id=user.id,
+        mode="manual",
+        payload={
+            "exception_id": str(case.id),
+            "response_type": payload.response_type,
+            "message": payload.message.strip(),
+        },
+    )
+    db.commit()
+    db.refresh(case)
+    return _escalated_exception_view(db, case)

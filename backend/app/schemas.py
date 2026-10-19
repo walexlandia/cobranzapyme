@@ -1033,3 +1033,67 @@ class ClientTrendView(BaseModel):
     outcomes: dict[str, Any]
     trend: list[PilotTrendPoint] = Field(default_factory=list)
 
+
+class PilotLogCreate(BaseModel):
+    client_id: uuid.UUID
+    entry_type: Literal["decision", "incident", "manual_work", "rule_change", "learning"]
+    severity: Literal["info", "warning", "critical"] = "info"
+    title: str = Field(min_length=3, max_length=200)
+    detail: str = Field(min_length=3, max_length=4000)
+    occurred_on: date
+    human_minutes: Decimal = Field(default=Decimal("0"), ge=0, le=1440)
+    related_invoice_id: uuid.UUID | None = None
+
+
+class PilotLogResolve(BaseModel):
+    client_id: uuid.UUID
+    resolution_note: str = Field(min_length=3, max_length=2000)
+
+
+class PilotLogEntryView(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    client_id: uuid.UUID
+    related_invoice_id: uuid.UUID | None
+    entry_type: str
+    severity: str
+    title: str
+    detail: str
+    status: str
+    occurred_on: date
+    human_minutes: Decimal
+    created_by: uuid.UUID
+    resolved_by: uuid.UUID | None
+    resolved_at: datetime | None
+    resolution_note: str | None
+    created_at: datetime
+
+
+class ClientExceptionResponseCreate(BaseModel):
+    response_type: Literal["approved", "information_provided", "rejected"]
+    message: str = Field(min_length=3, max_length=2000)
+
+
+class ClientEscalatedExceptionView(BaseModel):
+    id: uuid.UUID
+    client_id: uuid.UUID
+    invoice_id: uuid.UUID | None
+    invoice_folio: str | None
+    payer_name: str | None
+    kind: str
+    priority: int
+    note: str
+    escalated_at: datetime
+    response: dict[str, Any] | None = None
+
+
+class DemoWalkthroughView(BaseModel):
+    client_id: uuid.UUID
+    client_name: str
+    operation_date: date
+    ready_steps: int
+    total_steps: int
+    steps: list[dict[str, Any]] = Field(default_factory=list)
+    generated_at: datetime
+

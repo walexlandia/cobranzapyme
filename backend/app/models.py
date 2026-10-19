@@ -286,6 +286,48 @@ class ClientDocumentSubmission(BaseRecord, Base):
     review_note: Mapped[str | None] = mapped_column(Text)
 
 
+class PilotLogEntry(BaseRecord, Base):
+    __tablename__ = "pilot_log_entries"
+    __table_args__ = (
+        CheckConstraint(
+            "entry_type IN ('decision', 'incident', 'manual_work', 'rule_change', 'learning')",
+            name="ck_pilot_log_entry_type",
+        ),
+        CheckConstraint(
+            "severity IN ('info', 'warning', 'critical')",
+            name="ck_pilot_log_severity",
+        ),
+        CheckConstraint(
+            "status IN ('open', 'resolved')",
+            name="ck_pilot_log_status",
+        ),
+        Index(
+            "ix_pilot_log_client_status_occurred",
+            "client_id",
+            "status",
+            "occurred_on",
+        ),
+    )
+
+    client_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("clients.id"), nullable=False, index=True)
+    related_invoice_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("invoices.id"), index=True
+    )
+    entry_type: Mapped[str] = mapped_column(String(30), nullable=False)
+    severity: Mapped[str] = mapped_column(String(20), default="info", nullable=False)
+    title: Mapped[str] = mapped_column(String(200), nullable=False)
+    detail: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(String(20), default="open", nullable=False)
+    occurred_on: Mapped[date] = mapped_column(Date, nullable=False)
+    human_minutes: Mapped[Decimal] = mapped_column(
+        Numeric(10, 2), default=Decimal("0"), nullable=False
+    )
+    created_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
+    resolved_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"), index=True)
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    resolution_note: Mapped[str | None] = mapped_column(Text)
+
+
 class MessageTemplate(BaseRecord, Base):
     __tablename__ = "message_templates"
     __table_args__ = (

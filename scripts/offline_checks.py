@@ -426,6 +426,15 @@ def check_openapi_contract() -> None:
         assert "/api/v1/metrics/pilot.csv" in schema["paths"]
         assert "/api/v1/metrics/client-trend" in schema["paths"]
         assert "PilotMetricsView" in schema["components"]["schemas"]
+        assert "/api/v1/pilot/log" in schema["paths"]
+        assert "/api/v1/pilot/log/{entry_id}/resolve" in schema["paths"]
+        assert "/api/v1/pilot/demo-walkthrough" in schema["paths"]
+        assert "/api/v1/client-portal/escalated-exceptions" in schema["paths"]
+        assert (
+            "/api/v1/client-portal/escalated-exceptions/{exception_id}/response"
+            in schema["paths"]
+        )
+        assert "PilotLogEntryView" in schema["components"]["schemas"]
     finally:
         if previous_module is None:
             sys.modules.pop("pydantic_settings", None)
@@ -453,6 +462,7 @@ def check_schema_compiles_for_postgresql() -> None:
         "data_access_logs",
         "pilot_authorization_events",
         "client_document_submissions",
+        "pilot_log_entries",
     }
     assert set(Base.metadata.tables) == expected
     dialect = postgresql.dialect()
@@ -494,8 +504,8 @@ def check_migration_chain() -> None:
         if down_revision is not None:
             assert down_revision in revisions, f"Unknown parent {down_revision} in {path.name}"
             heads.discard(down_revision)
-    assert heads == {"0013"}, f"Unexpected migration heads: {sorted(heads)}"
-    current: str | None = "0013"
+    assert heads == {"0014"}, f"Unexpected migration heads: {sorted(heads)}"
+    current: str | None = "0014"
     visited = []
     while current is not None:
         assert current not in visited, f"Migration cycle at {current}"
@@ -635,6 +645,27 @@ def check_phase7_pilot_metrics_assets() -> None:
     }
 
 
+def check_phase7_pilot_operations_assets() -> None:
+    pilot_router = (ROOT / "backend" / "app" / "routers" / "pilot.py").read_text(
+        encoding="utf-8"
+    )
+    portal_router = (
+        ROOT / "backend" / "app" / "routers" / "client_portal.py"
+    ).read_text(encoding="utf-8")
+    interface = (ROOT / "web" / "app" / "page.jsx").read_text(encoding="utf-8")
+    seed = (ROOT / "backend" / "app" / "seed.py").read_text(encoding="utf-8")
+    tests = (
+        ROOT / "backend" / "tests" / "test_pilot_operations.py"
+    ).read_text(encoding="utf-8")
+    assert "pilot.log_recorded" in pilot_router and "pilot.log_resolved" in pilot_router
+    assert "exception.client_responded" in portal_router
+    assert "PilotOperationsPanel" in interface and "recupera_demo_date" in interface
+    assert "PilotLogEntry(" in seed and "exception.escalated_to_client" in seed
+    assert "status_code == 403" in tests and "status_code == 404" in tests
+    for name in ("runbook-operacion.md", "guion-demostracion.md", "checklist-g4.md"):
+        assert (ROOT / "docs" / "fase-7" / name).is_file()
+
+
 def check_pilot_metrics_calculation() -> None:
     client_id = uuid.uuid4()
     payer_id = uuid.uuid4()
@@ -730,8 +761,20 @@ def check_pilot_metrics_calculation() -> None:
     class FakeSession:
         def __init__(self) -> None:
             self.results = iter(
-                (invoices, payments, [first_id, second_id], [exception], links, messages,
-                 [], [], attributions, [cause], [item])
+                (
+                    invoices,
+                    payments,
+                    [first_id, second_id],
+                    [exception],
+                    [],
+                    links,
+                    messages,
+                    [],
+                    [],
+                    attributions,
+                    [cause],
+                    [item],
+                )
             )
 
         def scalars(self, _statement: object):
@@ -883,6 +926,7 @@ def main() -> None:
         check_phase6_operational_assets,
         check_phase7_client_portal_assets,
         check_phase7_pilot_metrics_assets,
+        check_phase7_pilot_operations_assets,
         check_pilot_metrics_calculation,
         check_client_portal_calculation,
         check_workflow_rules,

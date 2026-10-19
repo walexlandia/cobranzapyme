@@ -707,7 +707,7 @@ function ExceptionsPanel({ clientId, request }) {
     <Message value={notice} onClose={() => setNotice(null)} />
     <article className="exception-queue"><div className="card-heading"><div><p className="kicker">E6-02 / E6-04 / E7-01</p><h3>Bandeja priorizada</h3></div><div className="queue-actions"><select value={status} onChange={(event) => { setStatus(event.target.value); setSelected(null); }}><option value="open">Abiertas</option><option value="resolved">Resueltas</option></select><button type="button" className="ghost" onClick={load}>Actualizar</button></div></div><div className="exception-list">{cases.map((item) => <button type="button" key={item.id} className={selected?.id === item.id ? "exception-item selected" : "exception-item"} onClick={() => openCase(item)}><span className={`priority-badge p${Math.floor(item.priority / 20)}`}>{item.priority}</span><span><b>{classificationLabels[item.classification?.category] || item.classification?.category || item.kind}</b><small>{item.context.invoice?.folio || "Sin factura"} · {item.context.invoice?.payer_name || item.kind}</small><em>{item.context.message?.body || "Sin contenido"}</em></span><span className="confidence">{item.classification ? `${Math.round(Number(item.classification.confidence) * 100)}%` : "—"}</span></button>)}{!cases.length && <p className="empty-version">No hay excepciones {status === "open" ? "abiertas" : "resueltas"}.</p>}</div></article>
     <aside className="exception-detail">{selected ? <>
-      <article className="version-card"><p className="kicker">PRIORIDAD {selected.priority} · {selected.kind}</p><h3>{classificationLabels[selected.classification?.category] || selected.classification?.category}</h3><div className="case-meta"><span>Confianza <b>{Math.round(Number(selected.classification?.confidence || 0) * 100)}%</b></span><span>Versión <b>{selected.classification?.version}</b></span><span>Origen <b>{selected.classification?.classifier_kind}</b></span></div><blockquote>{selected.context.message?.body}</blockquote>{selected.context.invoice && <div className="invoice-context"><b>{selected.context.invoice.folio}</b><span>{selected.context.invoice.payer_name}</span><span>{money.format(Number(selected.context.invoice.total_amount))} · vence {selected.context.invoice.due_on}</span></div>}<div className="extraction-grid"><div><b>Fechas</b><span>{selected.classification?.extracted_data?.payment_dates?.join(", ") || "—"}</span></div><div><b>Montos</b><span>{selected.classification?.extracted_data?.amounts?.map((amount) => money.format(amount)).join(", ") || "—"}</span></div><div><b>OC</b><span>{selected.classification?.extracted_data?.purchase_orders?.join(", ") || "—"}</span></div><div><b>HES</b><span>{selected.classification?.extracted_data?.hes_numbers?.join(", ") || "—"}</span></div></div></article>
+      <article className="version-card"><p className="kicker">PRIORIDAD {selected.priority} · {selected.kind}</p><h3>{classificationLabels[selected.classification?.category] || selected.classification?.category}</h3><div className="case-meta"><span>Confianza <b>{Math.round(Number(selected.classification?.confidence || 0) * 100)}%</b></span><span>Versión <b>{selected.classification?.version}</b></span><span>Origen <b>{selected.classification?.classifier_kind}</b></span></div><blockquote>{selected.context.message?.body}</blockquote>{selected.detail?.client_response && <div className="client-response operator-response"><b>Respuesta de la pyme · {selected.detail.client_response.response_type}</b><span>{selected.detail.client_response.message}</span><small>{new Date(selected.detail.client_response.submitted_at).toLocaleString("es-CL")}</small></div>}{selected.context.invoice && <div className="invoice-context"><b>{selected.context.invoice.folio}</b><span>{selected.context.invoice.payer_name}</span><span>{money.format(Number(selected.context.invoice.total_amount))} · vence {selected.context.invoice.due_on}</span></div>}<div className="extraction-grid"><div><b>Fechas</b><span>{selected.classification?.extracted_data?.payment_dates?.join(", ") || "—"}</span></div><div><b>Montos</b><span>{selected.classification?.extracted_data?.amounts?.map((amount) => money.format(amount)).join(", ") || "—"}</span></div><div><b>OC</b><span>{selected.classification?.extracted_data?.purchase_orders?.join(", ") || "—"}</span></div><div><b>HES</b><span>{selected.classification?.extracted_data?.hes_numbers?.join(", ") || "—"}</span></div></div></article>
       {selected.status === "open" ? <>
         {selected.context.invoice && selected.context.message && <article className="review-card response-draft-card"><p className="kicker">E7-03 · RESPUESTA ASISTIDA</p><h3>Preparar respuesta segura</h3><form onSubmit={prepareResponse}><label>Canal<select value={responseForm.channel} onChange={(event) => setResponseForm((current) => ({ ...current, channel: event.target.value }))}><option value="email">Email</option><option value="whatsapp_assisted">WhatsApp asistido</option></select></label>{responseForm.channel === "email" && <label>Asunto<input value={responseForm.subject} onChange={(event) => setResponseForm((current) => ({ ...current, subject: event.target.value }))} /></label>}<label>Contenido<textarea required minLength="10" rows="8" value={responseForm.body} onChange={(event) => setResponseForm((current) => ({ ...current, body: event.target.value }))} /></label><button className="secondary" disabled={busy || !responseForm.body}>Crear borrador</button></form><p className="form-help">Se guarda en la bandeja de salida con revisión humana obligatoria y sin entrega externa.</p>{preparedResponse && <div className="prepared-response"><b>{preparedResponse.status === "blocked" ? "Borrador bloqueado" : "Borrador preparado"}</b><span>{preparedResponse.channel} · {preparedResponse.status} · costo $0</span></div>}</article>}
         <article className="review-card"><p className="kicker">E7-03 / E7-05</p><h3>Decisión humana</h3><form onSubmit={resolve}><label>Categoría<select value={review.category} onChange={(event) => setReview((current) => ({ ...current, category: event.target.value }))}>{Object.entries(classificationLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label><label>Datos extraídos (JSON)<textarea rows="8" value={review.extracted_data} onChange={(event) => setReview((current) => ({ ...current, extracted_data: event.target.value }))} /></label>{selected.context.payability?.length > 0 && <fieldset className="checklist-corrections"><legend>Correcciones de checklist</legend>{selected.context.payability.map((item) => <label key={item.id}>{item.label}<select value={checklistEdits[item.id] || item.status} onChange={(event) => setChecklistEdits((current) => ({ ...current, [item.id]: event.target.value }))}><option value="pending">Pendiente</option><option value="requested">Solicitado</option><option value="fulfilled">Cumplido</option><option value="not_applicable">No aplica</option><option value="blocked">Bloqueado</option></select></label>)}</fieldset>}<label>Corregir etapa<select value={workflowStage} onChange={(event) => setWorkflowStage(event.target.value)}><option value="">Sin cambio</option>{Object.entries(stageLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label><label>Minutos humanos<input type="number" min="0" max="480" step="0.25" value={review.human_minutes} onChange={(event) => setReview((current) => ({ ...current, human_minutes: event.target.value }))} /></label><label>Nota de revisión<textarea rows="3" value={review.note} onChange={(event) => setReview((current) => ({ ...current, note: event.target.value }))} /></label><button className="primary" disabled={busy}>Confirmar y resolver</button></form></article>
@@ -871,6 +871,9 @@ function ClientPortalPanel({ clientId, userRole, request, download, onOpenCheckl
   const [reviewing, setReviewing] = useState("");
   const [documentTarget, setDocumentTarget] = useState(null);
   const [clientTrend, setClientTrend] = useState(null);
+  const [escalations, setEscalations] = useState([]);
+  const [escalationReplies, setEscalationReplies] = useState({});
+  const [responding, setResponding] = useState("");
 
   const query = useCallback((dateField) => {
     const params = new URLSearchParams({ [dateField]: asOf });
@@ -889,13 +892,14 @@ function ClientPortalPanel({ clientId, userRole, request, download, onOpenCheckl
       if (userRole === "client") {
         const start = new Date(`${asOf}T12:00:00`); start.setDate(start.getDate() - 83);
         calls.push(request(`/api/v1/metrics/client-trend?date_from=${start.toISOString().slice(0, 10)}&date_to=${asOf}`));
+        calls.push(request("/api/v1/client-portal/escalated-exceptions"));
       } else {
         calls.push(request(`/api/v1/client-portal/document-submissions?client_id=${clientId}&status=pending`));
       }
-      const [summaryResult, reportResult, thirdResult] = await Promise.all(calls);
+      const [summaryResult, reportResult, thirdResult, fourthResult = []] = await Promise.all(calls);
       setSummary(summaryResult); setReport(reportResult);
-      if (userRole === "client") { setClientTrend(thirdResult); setSubmissions([]); }
-      else { setSubmissions(thirdResult || []); setClientTrend(null); }
+      if (userRole === "client") { setClientTrend(thirdResult); setEscalations(fourthResult); setSubmissions([]); }
+      else { setSubmissions(thirdResult || []); setClientTrend(null); setEscalations([]); }
     } catch (error) {
       setMessage({ type: "error", text: error.message });
     } finally {
@@ -929,6 +933,18 @@ function ClientPortalPanel({ clientId, userRole, request, download, onOpenCheckl
     }
   }
 
+  async function respondToEscalation(item, responseType) {
+    const reply = (escalationReplies[item.id] || "").trim();
+    if (reply.length < 3) { setMessage({ type: "error", text: "Escribe una respuesta de al menos 3 caracteres." }); return; }
+    setResponding(item.id); setMessage(null);
+    try {
+      await request(`/api/v1/client-portal/escalated-exceptions/${item.id}/response`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ response_type: responseType, message: reply }) });
+      setMessage({ type: "success", text: "Respuesta registrada y enviada a la bandeja del operador." });
+      await load();
+    } catch (error) { setMessage({ type: "error", text: error.message }); }
+    finally { setResponding(""); }
+  }
+
   const totals = summary?.totals;
   return <section className="client-portal-layout">
     <Message value={message} onClose={() => setMessage(null)} />
@@ -946,6 +962,7 @@ function ClientPortalPanel({ clientId, userRole, request, download, onOpenCheckl
       <Stat label="Saldo abierto" value={totals ? money.format(Number(totals.outstanding_amount)) : "—"} note={`${totals?.dispute_count ?? 0} en disputa`} />
     </section>
     {clientTrend && <article className="client-trend-card"><div className="card-heading"><div><p className="kicker">E10-05 · EVOLUCIÓN</p><h3>DSO y pago oportuno</h3></div><span className="read-only">Últimos 84 días</span></div><div className="trend-comparison"><div><span>DSO base</span><b>{clientTrend.baseline.dso ?? "—"} días</b><small>Actual: {clientTrend.outcomes.average_dso ?? "—"} días</small></div><div><span>Pago oportuno base</span><b>{clientTrend.baseline.on_time_percent ?? "—"}%</b><small>Actual: {clientTrend.outcomes.on_time_percent ?? "—"}%</small></div><div><span>Monto verificado</span><b>{money.format(Number(clientTrend.outcomes.verified_amount))}</b><small>{clientTrend.outcomes.settled_invoices} facturas saldadas</small></div></div><div className="mini-trend" aria-label="Tendencia semanal">{clientTrend.trend.map((point) => <div key={point.week_start} title={`${point.week_start}: ${point.on_time_percent ?? 0}% pago oportuno`}><span style={{ height: `${Math.max(Number(point.on_time_percent || 0), 4)}%` }} /><small>{point.week_start.slice(5)}</small></div>)}</div></article>}
+    {userRole === "client" && escalations.length > 0 && <article className="client-escalations"><div className="card-heading"><div><p className="kicker">E10-04 · REQUIERE TU RESPUESTA</p><h3>Excepciones escaladas</h3></div><span className="read-only">{escalations.filter((item) => !item.response).length} pendientes</span></div><div className="client-escalation-list">{escalations.map((item) => <article key={item.id}><div><b>{item.invoice_folio || "Caso general"} · {item.payer_name || item.kind}</b><span>{item.note}</span><small>{new Date(item.escalated_at).toLocaleString("es-CL")}</small></div>{item.response ? <div className="client-response"><b>Respuesta registrada</b><span>{item.response.message}</span></div> : <><textarea aria-label={`Respuesta para ${item.invoice_folio || item.kind}`} placeholder="Información o decisión para el operador" value={escalationReplies[item.id] || ""} onChange={(event) => setEscalationReplies((current) => ({ ...current, [item.id]: event.target.value }))} /><div className="button-row"><button type="button" className="mini-button danger" disabled={responding === item.id} onClick={() => respondToEscalation(item, "rejected")}>No aprobar</button><button type="button" className="mini-button" disabled={responding === item.id} onClick={() => respondToEscalation(item, "information_provided")}>Responder</button><button type="button" className="mini-button" disabled={responding === item.id} onClick={() => respondToEscalation(item, "approved")}>Aprobar</button></div></>}</article>)}</div></article>}
     {userRole !== "client" && <article className="document-review-card"><div className="card-heading"><div><p className="kicker">E10-03 · REVISIÓN HUMANA</p><h3>Documentos pendientes</h3></div><span className="read-only">{submissions.length} por revisar</span></div><div className="document-review-list">{submissions.map((submission) => <article key={submission.id}><div><b>{submission.invoice_folio} · {submission.item_label}</b><span>{submission.original_name} · {submission.submitted_by_name}</span><small>SHA-256 {submission.content_sha256.slice(0, 16)}… · {new Date(submission.created_at).toLocaleString("es-CL")}</small></div><input aria-label={`Observación para ${submission.original_name}`} placeholder="Observación de revisión" value={reviewNotes[submission.id] || ""} onChange={(event) => setReviewNotes((current) => ({ ...current, [submission.id]: event.target.value }))} /><div className="button-row"><button type="button" className="mini-button danger" disabled={reviewing === submission.id} onClick={() => reviewDocument(submission, "rejected")}>Rechazar</button><button type="button" className="mini-button" disabled={reviewing === submission.id} onClick={() => reviewDocument(submission, "accepted")}>Aceptar</button></div></article>)}{!submissions.length && <p className="empty">No hay documentos pendientes para este cliente.</p>}</div></article>}
     <article className="table-card">
       <div className="card-heading"><div><p className="kicker">CARTERA AL {asOf}</p><h3>Estado y checklist</h3></div><span className="read-only">Vista sin acciones operativas</span></div>
@@ -989,7 +1006,7 @@ function MetricsPanel({ clientId, request, download }) {
     <Message value={message} onClose={() => setMessage(null)} />
     <article className="metrics-hero"><div><p className="kicker">FASE 7.3 · E11-02 A E11-07</p><h3>Métricas del piloto</h3><p>Resultados, operación y economía trazables desde pagos verificados, eventos y revisiones humanas.</p></div><div className="metrics-filters"><label>Desde<input type="date" name="date_from" value={filters.date_from} onChange={change} /></label><label>Hasta<input type="date" name="date_to" value={filters.date_to} onChange={change} /></label><label>Costo humano CLP/h<input type="number" min="0" name="human_hourly_cost_clp" value={filters.human_hourly_cost_clp} onChange={change} /></label><label>CLP por USD<input type="number" min="1" name="usd_clp_rate" value={filters.usd_clp_rate} onChange={change} /></label><button type="button" className="secondary" onClick={load} disabled={loading}>{loading ? "Calculando…" : "Calcular"}</button><button type="button" className="primary" onClick={exportCsv} disabled={!report}>Exportar CSV</button></div></article>
     {report && <>
-      <section className="stats-grid"><Stat label="Facturas gestionadas" value={report.outcomes.managed_invoices} note={`${report.outcomes.settled_invoices} saldadas`} /><Stat label="Pago oportuno" value={percentage(report.outcomes.on_time_percent)} note={`base ${percentage(report.baseline.on_time_percent)}`} /><Stat label="DSO promedio" value={decimal(report.outcomes.average_dso, " días")} note={`base ${decimal(report.baseline.dso, " días")}`} /><Stat label="Monto recuperado" value={money.format(Number(report.outcomes.recovered_amount))} note="pagos posteriores al vencimiento" /><Stat label="Minutos humanos" value={decimal(report.operations.human_minutes)} note="registrados en excepciones" /><Stat label="Costo por factura" value={report.economics.cost_per_managed_invoice_clp == null ? "—" : money.format(Number(report.economics.cost_per_managed_invoice_clp))} note="tecnología + operación" /><Stat label="Comisiones" value={money.format(Number(report.economics.commission_clp))} note="atribuciones verificadas" /><Stat label="Margen estimado" value={money.format(Number(report.economics.margin_clp))} note="con supuestos editables" /></section>
+      <section className="stats-grid"><Stat label="Facturas gestionadas" value={report.outcomes.managed_invoices} note={`${report.outcomes.settled_invoices} saldadas`} /><Stat label="Pago oportuno" value={percentage(report.outcomes.on_time_percent)} note={`base ${percentage(report.baseline.on_time_percent)}`} /><Stat label="DSO promedio" value={decimal(report.outcomes.average_dso, " días")} note={`base ${decimal(report.baseline.dso, " días")}`} /><Stat label="Monto recuperado" value={money.format(Number(report.outcomes.recovered_amount))} note="pagos posteriores al vencimiento" /><Stat label="Minutos humanos" value={decimal(report.operations.human_minutes)} note="excepciones + bitácora" /><Stat label="Costo por factura" value={report.economics.cost_per_managed_invoice_clp == null ? "—" : money.format(Number(report.economics.cost_per_managed_invoice_clp))} note="tecnología + operación" /><Stat label="Comisiones" value={money.format(Number(report.economics.commission_clp))} note="atribuciones verificadas" /><Stat label="Margen estimado" value={money.format(Number(report.economics.margin_clp))} note="con supuestos editables" /></section>
       <section className="metrics-grid">
         <article className="metric-card wide-card"><div className="card-heading"><div><p className="kicker">E11-03</p><h3>Tendencia semanal</h3></div><span className="read-only">{report.date_from} al {report.date_to}</span></div><div className="table-wrap"><table><thead><tr><th>Semana</th><th>Saldadas</th><th>Pago oportuno</th><th>DSO</th><th>Monto verificado</th></tr></thead><tbody>{report.trend.map((point) => <tr key={point.week_start}><td><b>{point.week_start}</b><small>al {point.week_end}</small></td><td>{point.settled_invoices}</td><td>{percentage(point.on_time_percent)}</td><td>{decimal(point.average_dso, " días")}</td><td className="number">{money.format(Number(point.verified_amount))}</td></tr>)}</tbody></table></div></article>
         <article className="metric-card"><div className="card-heading"><div><p className="kicker">E11-05</p><h3>Automatización</h3></div></div><div className="automation-list">{[["Mensajes", report.operations.messages], ["Clasificaciones", report.operations.classifications], ["Conciliaciones", report.operations.reconciliations]].map(([label, item]) => <div key={label}><span>{label}</span><b>{percentage(item.automatic_percent)}</b><small>{item.automatic} automáticas · {item.manual} manuales</small><progress max="100" value={Number(item.automatic_percent || 0)} /></div>)}</div></article>
@@ -998,6 +1015,63 @@ function MetricsPanel({ clientId, request, download }) {
         <article className="metric-card"><div className="card-heading"><div><p className="kicker">E11-07</p><h3>Resolución documental</h3></div></div><div className="rank-list">{report.resolution_times.map((item) => <div key={item.item_type}><span>{item.item_type.replaceAll("_", " ")}</span><b>{decimal(item.average_hours, " h")}</b><small>{item.resolved_count} requisitos resueltos</small></div>)}{!report.resolution_times.length && <p className="empty">Sin requisitos resueltos en el período.</p>}</div></article>
       </section>
     </>}
+  </section>;
+}
+
+function PilotOperationsPanel({ clientId, invoices, request, onOpenView }) {
+  const today = new Date().toISOString().slice(0, 10);
+  const [operationDate, setOperationDate] = useState(() => typeof window === "undefined" ? today : (localStorage.getItem("recupera_demo_date") || today));
+  const [walkthrough, setWalkthrough] = useState(null);
+  const [entries, setEntries] = useState([]);
+  const [message, setMessage] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [resolutionNotes, setResolutionNotes] = useState({});
+  const [form, setForm] = useState({ entry_type: "incident", severity: "warning", title: "", detail: "", occurred_on: today, human_minutes: "0", related_invoice_id: "" });
+
+  const load = useCallback(async () => {
+    if (!clientId) return;
+    try {
+      const [logRows, walkthroughResult] = await Promise.all([
+        request(`/api/v1/pilot/log?client_id=${clientId}`),
+        request(`/api/v1/pilot/demo-walkthrough?client_id=${clientId}&operation_date=${operationDate}`),
+      ]);
+      setEntries(logRows); setWalkthrough(walkthroughResult);
+    } catch (error) { setMessage({ type: "error", text: error.message }); }
+  }, [clientId, operationDate, request]);
+  useEffect(() => { load(); }, [load]);
+
+  function fixOperationDate(value) {
+    setOperationDate(value);
+    localStorage.setItem("recupera_demo_date", value);
+  }
+  async function createEntry(event) {
+    event.preventDefault(); setBusy(true); setMessage(null);
+    try {
+      await request("/api/v1/pilot/log", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, client_id: clientId, human_minutes: Number(form.human_minutes), related_invoice_id: form.related_invoice_id || null }) });
+      setForm((current) => ({ ...current, title: "", detail: "", human_minutes: "0", related_invoice_id: "" }));
+      setMessage({ type: "success", text: "Registro incorporado a la bitácora auditable." });
+      await load();
+    } catch (error) { setMessage({ type: "error", text: error.message }); }
+    finally { setBusy(false); }
+  }
+  async function resolveEntry(entry) {
+    const note = (resolutionNotes[entry.id] || "").trim();
+    if (note.length < 3) { setMessage({ type: "error", text: "Describe cómo se resolvió la incidencia." }); return; }
+    setBusy(true); setMessage(null);
+    try {
+      await request(`/api/v1/pilot/log/${entry.id}/resolve`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ client_id: clientId, resolution_note: note }) });
+      setMessage({ type: "success", text: "Incidencia resuelta con trazabilidad." });
+      await load();
+    } catch (error) { setMessage({ type: "error", text: error.message }); }
+    finally { setBusy(false); }
+  }
+  const typeLabels = { decision: "Decisión", incident: "Incidencia", manual_work: "Trabajo manual", rule_change: "Cambio de regla", learning: "Aprendizaje" };
+
+  return <section className="pilot-operations-layout">
+    <Message value={message} onClose={() => setMessage(null)} />
+    <article className="demo-walkthrough"><div className="card-heading"><div><p className="kicker">E0-08 · RECORRIDO CONTROLADO</p><h3>Demostración de punta a punta</h3></div><label>Fecha de operación<input type="date" value={operationDate} onChange={(event) => fixOperationDate(event.target.value)} /></label></div>{walkthrough && <><div className="walkthrough-progress"><b>{walkthrough.ready_steps}/{walkthrough.total_steps} etapas con evidencia</b><progress max={walkthrough.total_steps} value={walkthrough.ready_steps} /></div><div className="walkthrough-steps">{walkthrough.steps.map((step, index) => <button type="button" key={step.key} className={step.ready ? "ready" : "pending"} onClick={() => onOpenView(step.target_view)}><i>{index + 1}</i><span><b>{step.label}</b><small>{step.ready ? "Evidencia disponible" : "Pendiente para esta fecha"}</small></span><em>{step.ready ? "✓" : "—"}</em></button>)}</div><p className="metric-note">La fecha controla este recorrido de lectura; no altera la base ni dispara comunicaciones externas.</p></>}</article>
+    <article className="pilot-log-form-card"><div className="card-heading"><div><p className="kicker">OPERACIÓN Y APRENDIZAJE</p><h3>Registrar actividad del piloto</h3></div></div><form className="pilot-log-form" onSubmit={createEntry}><label>Tipo<select value={form.entry_type} onChange={(event) => setForm((current) => ({ ...current, entry_type: event.target.value }))}>{Object.entries(typeLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label><label>Severidad<select value={form.severity} onChange={(event) => setForm((current) => ({ ...current, severity: event.target.value }))}><option value="info">Informativa</option><option value="warning">Advertencia</option><option value="critical">Crítica</option></select></label><label>Fecha<input type="date" required value={form.occurred_on} onChange={(event) => setForm((current) => ({ ...current, occurred_on: event.target.value }))} /></label><label>Minutos humanos<input type="number" min="0" max="1440" step="0.1" value={form.human_minutes} onChange={(event) => setForm((current) => ({ ...current, human_minutes: event.target.value }))} /></label><label className="wide">Factura relacionada<select value={form.related_invoice_id} onChange={(event) => setForm((current) => ({ ...current, related_invoice_id: event.target.value }))}><option value="">Caso general</option>{invoices.map((invoice) => <option key={invoice.id} value={invoice.id}>{invoice.folio} · {invoice.payer_name}</option>)}</select></label><label className="wide">Título<input required minLength="3" maxLength="200" value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} /></label><label className="wide">Detalle<textarea required minLength="3" maxLength="4000" value={form.detail} onChange={(event) => setForm((current) => ({ ...current, detail: event.target.value }))} /></label><button className="primary" disabled={busy}>Guardar registro</button></form></article>
+    <article className="pilot-log-card"><div className="card-heading"><div><p className="kicker">TRAZABILIDAD</p><h3>Decisiones e incidencias</h3></div><span className="read-only">{entries.filter((entry) => entry.status === "open").length} abiertas</span></div><div className="pilot-log-list">{entries.map((entry) => <article key={entry.id} className={`${entry.severity} ${entry.status}`}><div className="pilot-log-meta"><span>{typeLabels[entry.entry_type] || entry.entry_type}</span><small>{entry.occurred_on} · {entry.human_minutes} min</small></div><div><b>{entry.title}</b><p>{entry.detail}</p>{entry.resolution_note && <small>Resolución: {entry.resolution_note}</small>}</div><span className={`status-pill ${entry.status}`}>{entry.status}</span>{entry.status === "open" && <div className="pilot-resolve"><input placeholder="Resolución aplicada" value={resolutionNotes[entry.id] || ""} onChange={(event) => setResolutionNotes((current) => ({ ...current, [entry.id]: event.target.value }))} /><button type="button" className="mini-button" disabled={busy} onClick={() => resolveEntry(entry)}>Resolver</button></div>}</article>)}{!entries.length && <p className="empty">Aún no hay registros para este cliente.</p>}</div></article>
   </section>;
 }
 
@@ -1478,6 +1552,7 @@ export default function Home() {
     payments: ["PAGOS", "Conciliación supervisada"],
     access: ["SEGURIDAD", "Registro de accesos"],
     metrics: ["PILOTO", "Métricas operativas y económicas"],
+    pilot_operations: ["PILOTO ASISTIDO", "Recorrido, decisiones e incidencias"],
   }[activeView];
 
   if (!user) return <Login apiUrl={apiUrl} apiState={apiState} onAuthenticated={startSession} />;
@@ -1497,6 +1572,7 @@ export default function Home() {
           {canOperate && <button className={activeView === "payments" ? "active" : ""} onClick={() => setActiveView("payments")}><i>07</i>Pagos</button>}
           {user?.role === "admin" && <button className={activeView === "access" ? "active" : ""} onClick={() => setActiveView("access")}><i>08</i>Accesos</button>}
           {canOperate && <button className={activeView === "metrics" ? "active" : ""} onClick={() => setActiveView("metrics")}><i>10</i>Métricas</button>}
+          {canOperate && <button className={activeView === "pilot_operations" ? "active" : ""} onClick={() => setActiveView("pilot_operations")}><i>11</i>Piloto</button>}
         </nav>
         <div className="session-card">
           <span>{user.role}</span><b>{user.full_name}</b><small>{user.email}</small><button type="button" onClick={logout}>Cerrar sesión</button>
@@ -1590,6 +1666,8 @@ export default function Home() {
           <PaymentsPanel clientId={selectedClientId} invoices={invoices} request={request} onChanged={loadInvoices} />
         ) : activeView === "metrics" ? (
           <MetricsPanel clientId={selectedClientId} request={request} download={download} />
+        ) : activeView === "pilot_operations" ? (
+          <PilotOperationsPanel clientId={selectedClientId} invoices={invoices} request={request} onOpenView={setActiveView} />
         ) : (
           <AccessLogsPanel request={request} />
         )}

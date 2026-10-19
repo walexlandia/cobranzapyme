@@ -19,6 +19,7 @@ from app.models import (
     PayabilityItem,
     Payment,
     PaymentAttribution,
+    PilotLogEntry,
     ReconciliationProposal,
 )
 
@@ -154,6 +155,19 @@ def build_pilot_metrics(
     human_minutes = sum(
         (Decimal(item.human_minutes or 0) for item in exceptions), Decimal("0")
     )
+    pilot_log_entries = list(
+        db.scalars(
+            select(PilotLogEntry).where(
+                PilotLogEntry.client_id == client.id,
+                PilotLogEntry.occurred_on >= date_from,
+                PilotLogEntry.occurred_on <= date_to,
+            )
+        )
+    )
+    logged_human_minutes = sum(
+        (Decimal(item.human_minutes or 0) for item in pilot_log_entries), Decimal("0")
+    )
+    human_minutes += logged_human_minutes
     message_links = list(
         db.scalars(
             select(MessageInvoice).where(
@@ -321,6 +335,8 @@ def build_pilot_metrics(
         },
         "operations": {
             "human_minutes": _decimal(human_minutes),
+            "exception_human_minutes": _decimal(human_minutes - logged_human_minutes),
+            "logged_human_minutes": _decimal(logged_human_minutes),
             "messages": _mode_breakdown(
                 sum(message.mode == "automatic" for message in messages),
                 sum(message.mode == "manual" for message in messages),

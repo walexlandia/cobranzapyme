@@ -50,16 +50,35 @@ Los indicadores usan exclusivamente pagos verificados. El DSO se calcula cuando 
 
 La prueba de integración `backend/tests/test_pilot_metrics.py` construye dos facturas ficticias —una pagada a tiempo y otra atrasada— junto con costos, comisión, intervención humana y requisito documental. Verifica los resultados exactos, el CSV y el aislamiento por rol.
 
+## Incremento 7.4 — Operación, aprendizaje y demostración
+
+| Historia / criterio | Estado local | Evidencia |
+|---|---|---|
+| E0-08 Fecha de operación demo | Completo localmente | Fecha persistida en la interfaz y recorrido de seis etapas calculado sin modificar datos |
+| E10-04 Respuesta del cliente | Completo localmente | La pyme lista solo sus excepciones escaladas y puede aprobar, rechazar o entregar información una única vez |
+| Registro de operación | Completo | Bitácora por cliente para decisiones, incidencias, trabajo manual, cambios de reglas y aprendizajes |
+| Minutos fuera del flujo | Completo | Los minutos de la bitácora se incorporan al costo humano del panel de métricas según su fecha efectiva |
+| Auditoría | Completo | Altas, resoluciones y respuestas generan eventos con actor, modo, cliente y factura cuando corresponde |
+| Demostración punta a punta | Completo localmente | Panel navegable con evidencia de contrato/cartera, pagabilidad, comunicación, supervisión, pago y medición |
+| Preparación G4 | Completo como instrumento | Runbook, guion de demostración y checklist; la decisión permanece pendiente de evidencia real |
+
+La migración `0014` agrega `pilot_log_entries`. Los incidentes se crean abiertos y exigen una resolución explícita; los demás tipos registran una actividad ya completada. El seed incorpora entradas ficticias idempotentes y una excepción escalada por pyme para recorrer el flujo sin acceso directo a PostgreSQL.
+
+Documentos operativos:
+
+- `docs/fase-7/runbook-operacion.md`
+- `docs/fase-7/guion-demostracion.md`
+- `docs/fase-7/checklist-g4.md`
+
 ## Validación local
 
 - Compilación Python aprobada.
 - Contrato OpenAPI del portal, documentos y métricas aprobado.
-- 25 comprobaciones offline aprobadas, incluidos los contratos del panel y un cálculo completo con datos sintéticos.
-- Build de producción Next.js aprobado con la imagen local `recupera-web:phase7-3`.
-- Pruebas HTTP/PostgreSQL agregadas en `backend/tests/test_client_portal.py`, `backend/tests/test_client_documents.py` y `backend/tests/test_pilot_metrics.py`; su ejecución integral sigue pendiente porque el entorno local no contiene `pytest` ni la imagen backend con dependencias.
+- 26 comprobaciones offline aprobadas, incluidos contratos, migración y activos operativos de 7.4.
+- Build de producción Next.js aprobado con la imagen local `recupera-web:phase7-4`.
+- Esquema de 36 tablas y restricciones de `pilot_log_entries` creado correctamente en PostgreSQL 16 desechable.
+- Pruebas HTTP/PostgreSQL agregadas también en `backend/tests/test_pilot_operations.py`; su ejecución integral sigue pendiente porque el entorno local no contiene `pytest` ni la imagen backend con dependencias.
 
-## Próximo incremento 7.4
+## Cierre técnico local de la Fase 7
 
-1. Registro visible de decisiones e incidencias del piloto.
-2. Recorrido demostrable de punta a punta sin acceso directo a la base de datos.
-3. Guion de operación, cierre y evaluación de la puerta G4.
+El alcance local y demostrable de la fase queda cubierto. Las integraciones externas, la operación con 2–3 pymes y la evidencia de 6–8 semanas continúan bloqueadas hasta contar con autorización, infraestructura y datos reales. La siguiente fase es la Fase 8: medición final y decisión de escala, sin declarar G4 aprobada anticipadamente.
