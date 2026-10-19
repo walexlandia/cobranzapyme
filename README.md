@@ -113,6 +113,16 @@ El incremento 7.2 agrega:
 - actualización del checklist solo después de aceptación humana;
 - eventos auditables y una evidencia sintética pendiente por pyme en el seed.
 
+El incremento 7.3 agrega:
+
+- panel operativo con facturas gestionadas, recuperación, minutos humanos, costos, comisiones y margen;
+- DSO y pago oportuno comparados con la línea base de cada pyme;
+- tendencias semanales basadas únicamente en pagos verificados;
+- desglose automático/manual para mensajes, clasificaciones y conciliaciones;
+- causas de atraso y tiempo medio de resolución documental;
+- exportación CSV y vista cliente limitada a resultados, sin economía interna;
+- supuestos económicos editables y datos de prueba sintéticos con resultados verificables.
+
 ## Servicios
 
 - `db`: PostgreSQL 16.
@@ -143,7 +153,7 @@ docker build --network=none -f web/Dockerfile.offline -t recupera-web:offline we
 
 `Dockerfile.offline` reutiliza una imagen Next.js que ya existe en este equipo. Es un recurso local de desarrollo; el artefacto portable sigue siendo `web/Dockerfile`.
 
-Las comprobaciones offline también validan que la cadena Alembic tenga una sola cabeza, que sus tablas y columnas coincidan con los modelos, que estén presentes las configuraciones operativas de Fase 6 y que el contrato del portal de cliente de Fase 7 permanezca completo.
+Las comprobaciones offline también validan que la cadena Alembic tenga una sola cabeza, que sus tablas y columnas coincidan con los modelos, que estén presentes las configuraciones operativas de Fase 6 y que los contratos del portal y las métricas de Fase 7 permanezcan completos.
 
 La preparación segura de Fase 6, incluyendo entornos separados, TLS local y respaldo/restauración, está documentada en `docs/fase-6/runbook-piloto.md`.
 
@@ -172,6 +182,6 @@ Los CSV listos para importar están en `data/demo/imports`. Incluyen tres pymes 
 - `docs/fase-4/estado.md`: avance y límites de la operación multicanal simulada.
 - `docs/fase-5/estado.md`: clasificación supervisada, evaluación y puerta de automatización.
 - `docs/fase-6/estado.md`: pagos manuales, cartolas y conciliación supervisada.
-- `docs/fase-7/estado.md`: vista cliente, reporte semanal y próximos incrementos del piloto asistido.
+- `docs/fase-7/estado.md`: vista cliente, documentos, métricas y próximos incrementos del piloto asistido.
 - `examples/`: archivos de facturas y contactos para probar las importaciones.
 

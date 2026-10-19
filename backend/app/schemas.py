@@ -1,7 +1,7 @@
 import uuid
 from datetime import date, datetime, time
 from decimal import Decimal
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
@@ -997,4 +997,39 @@ class PayerProfileProposalView(BaseModel):
     reviewed_by: uuid.UUID | None
     reviewed_at: datetime | None
     created_at: datetime
+
+
+class PilotTrendPoint(BaseModel):
+    week_start: date
+    week_end: date
+    settled_invoices: int
+    on_time_percent: Decimal | None
+    average_dso: Decimal | None
+    verified_amount: Decimal
+
+
+class PilotMetricsView(BaseModel):
+    client_id: uuid.UUID
+    client_name: str
+    date_from: date
+    date_to: date
+    baseline: dict[str, Any]
+    outcomes: dict[str, Any]
+    operations: dict[str, Any]
+    economics: dict[str, Any]
+    assumptions: dict[str, Any]
+    delay_causes: list[dict[str, Any]] = Field(default_factory=list)
+    resolution_times: list[dict[str, Any]] = Field(default_factory=list)
+    trend: list[PilotTrendPoint] = Field(default_factory=list)
+    generated_at: datetime
+
+
+class ClientTrendView(BaseModel):
+    client_id: uuid.UUID
+    client_name: str
+    date_from: date
+    date_to: date
+    baseline: dict[str, Any]
+    outcomes: dict[str, Any]
+    trend: list[PilotTrendPoint] = Field(default_factory=list)
 

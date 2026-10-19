@@ -34,17 +34,32 @@
 
 La tabla `client_document_submissions` separa el archivo cifrado de su decisión de revisión. La interfaz nunca expone el contenido ni permite que un cliente complete directamente su checklist.
 
+## Incremento 7.3 — Métricas del piloto
+
+| Historia | Estado local | Evidencia |
+|---|---|---|
+| E10-05 Evolución para el cliente | Completo localmente | DSO y pago oportuno actuales comparados con la línea base, más tendencia semanal sin exponer costos internos |
+| E11-02 Resultados y economía | Completo localmente | Facturas gestionadas, recuperación, minutos humanos, costos, costo por factura, comisiones y margen |
+| E11-03 Línea base y evolución | Completo localmente | Serie semanal de facturas saldadas, DSO, pago oportuno y monto verificado |
+| E11-04 Exportación | Completo localmente | CSV UTF-8 con resumen, supuestos, causas y tendencia |
+| E11-05 Automatización | Completo localmente | Desglose automático/manual para mensajes, clasificaciones y actividades de conciliación |
+| E11-06 Causas de atraso | Completo localmente | Cantidad de facturas y monto nominal agrupados por causa registrada en el período |
+| E11-07 Resolución documental | Completo localmente | Tiempo promedio en horas por tipo de requisito completado |
+
+Los indicadores usan exclusivamente pagos verificados. El DSO se calcula cuando los pagos acumulados cubren el total de la factura, y el pago oportuno compara esa fecha de liquidación con el vencimiento. Los supuestos de costo humano y conversión USD/CLP son visibles, editables y quedan separados de los hechos almacenados. El rango máximo por consulta es de 366 días.
+
+La prueba de integración `backend/tests/test_pilot_metrics.py` construye dos facturas ficticias —una pagada a tiempo y otra atrasada— junto con costos, comisión, intervención humana y requisito documental. Verifica los resultados exactos, el CSV y el aislamiento por rol.
+
 ## Validación local
 
 - Compilación Python aprobada.
-- Contrato OpenAPI del portal y sus tres rutas aprobado.
-- 23 comprobaciones offline aprobadas, incluido el cálculo funcional del resumen con pago parcial.
-- Build de producción Next.js aprobado con la imagen local `recupera-web:phase7`.
-- Pruebas HTTP/PostgreSQL agregadas en `backend/tests/test_client_portal.py` y `backend/tests/test_client_documents.py`; su ejecución sigue pendiente porque el entorno local no contiene `pytest` ni la imagen backend con dependencias.
+- Contrato OpenAPI del portal, documentos y métricas aprobado.
+- 25 comprobaciones offline aprobadas, incluidos los contratos del panel y un cálculo completo con datos sintéticos.
+- Build de producción Next.js aprobado con la imagen local `recupera-web:phase7-3`.
+- Pruebas HTTP/PostgreSQL agregadas en `backend/tests/test_client_portal.py`, `backend/tests/test_client_documents.py` y `backend/tests/test_pilot_metrics.py`; su ejecución integral sigue pendiente porque el entorno local no contiene `pytest` ni la imagen backend con dependencias.
 
-## Próximo incremento 7.3
+## Próximo incremento 7.4
 
-1. Panel de métricas operativas y económicas del piloto.
-2. Tendencias de pagabilidad, pagos, causas de atraso y tiempo humano.
-3. Registro visible de decisiones e incidencias del piloto.
-4. Recorrido demostrable de punta a punta sin acceso directo a la base de datos.
+1. Registro visible de decisiones e incidencias del piloto.
+2. Recorrido demostrable de punta a punta sin acceso directo a la base de datos.
+3. Guion de operación, cierre y evaluación de la puerta G4.

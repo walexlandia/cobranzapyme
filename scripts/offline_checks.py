@@ -52,6 +52,11 @@ from app.services.invoice_import import (  # noqa: E402
 )
 from app.services.payability import checklist_status, requirement_specs  # noqa: E402
 from app.services.payments import parse_bank_statement_file  # noqa: E402
+from app.services.pilot_metrics import (  # noqa: E402
+    _mode_breakdown,
+    _percent,
+    build_pilot_metrics,
+)
 from app.services.workflow_engine import determine_stage, next_allowed_at, stage_windows  # noqa: E402
 from app.utils.rut import normalize_rut  # noqa: E402
 
@@ -371,7 +376,7 @@ def check_openapi_contract() -> None:
         from app.main import app
 
         schema = app.openapi()
-        assert len(schema["paths"]) >= 35
+        assert len(schema["paths"]) >= 38
         assert (
             "/api/v1/payability/invoices/{invoice_id}/preventive-confirmation"
             in schema["paths"]
@@ -417,6 +422,10 @@ def check_openapi_contract() -> None:
         assert "ClientPortalSummaryView" in schema["components"]["schemas"]
         assert "WeeklyClientReportView" in schema["components"]["schemas"]
         assert "ClientDocumentSubmissionView" in schema["components"]["schemas"]
+        assert "/api/v1/metrics/pilot" in schema["paths"]
+        assert "/api/v1/metrics/pilot.csv" in schema["paths"]
+        assert "/api/v1/metrics/client-trend" in schema["paths"]
+        assert "PilotMetricsView" in schema["components"]["schemas"]
     finally:
         if previous_module is None:
             sys.modules.pop("pydantic_settings", None)
@@ -600,6 +609,146 @@ def check_phase7_client_portal_assets() -> None:
     assert "client_document.reviewed" in document_tests
 
 
+def check_phase7_pilot_metrics_assets() -> None:
+    router = (ROOT / "backend" / "app" / "routers" / "metrics.py").read_text(
+        encoding="utf-8"
+    )
+    service = (ROOT / "backend" / "app" / "services" / "pilot_metrics.py").read_text(
+        encoding="utf-8"
+    )
+    interface = (ROOT / "web" / "app" / "page.jsx").read_text(encoding="utf-8")
+    tests = (ROOT / "backend" / "tests" / "test_pilot_metrics.py").read_text(
+        encoding="utf-8"
+    )
+    assert "build_pilot_metrics" in router and "utf-8-sig" in router
+    assert "Payment.verified.is_(True)" in service
+    assert "human_hourly_cost_clp" in service and "usd_clp_rate" in service
+    assert "MetricsPanel" in interface and "metrics/client-trend" in interface
+    assert "economics" in tests and "status_code == 403" in tests
+    assert _percent(1, 2) == Decimal("50.00")
+    assert _percent(0, 0) is None
+    assert _mode_breakdown(3, 1) == {
+        "automatic": 3,
+        "manual": 1,
+        "total": 4,
+        "automatic_percent": Decimal("75.00"),
+    }
+
+
+def check_pilot_metrics_calculation() -> None:
+    client_id = uuid.uuid4()
+    payer_id = uuid.uuid4()
+    first_id, second_id = uuid.uuid4(), uuid.uuid4()
+    timestamp = datetime(2026, 2, 3, 12, tzinfo=timezone.utc)
+    tenant = models.Client(
+        id=client_id,
+        name="Pyme métrica sintética",
+        rut="TEST-METRICS",
+        baseline_dso=Decimal("45"),
+        baseline_on_time_percent=Decimal("35"),
+    )
+    invoices = [
+        models.Invoice(
+            id=first_id, client_id=client_id, payer_id=payer_id, folio="M-1",
+            issued_on=date(2026, 1, 10), due_on=date(2026, 2, 9),
+            total_amount=Decimal("100000"), status=InvoiceStatus.PAID,
+        ),
+        models.Invoice(
+            id=second_id, client_id=client_id, payer_id=payer_id, folio="M-2",
+            issued_on=date(2026, 1, 10), due_on=date(2026, 2, 9),
+            total_amount=Decimal("100000"), status=InvoiceStatus.PAID,
+        ),
+    ]
+    payments = [
+        models.Payment(
+            id=uuid.uuid4(), client_id=client_id, invoice_id=first_id,
+            amount=Decimal("100000"), paid_on=date(2026, 2, 5), verified=True,
+            source="manual", created_at=timestamp,
+        ),
+        models.Payment(
+            id=uuid.uuid4(), client_id=client_id, invoice_id=second_id,
+            amount=Decimal("100000"), paid_on=date(2026, 2, 20), verified=True,
+            source="manual", created_at=timestamp,
+        ),
+    ]
+    message_ids = [uuid.uuid4(), uuid.uuid4()]
+    messages = [
+        models.Message(
+            id=message_ids[0], client_id=client_id, invoice_id=first_id,
+            channel="email", direction="outbound", mode="automatic", body="Sintético",
+            status="sent", created_at=timestamp,
+        ),
+        models.Message(
+            id=message_ids[1], client_id=client_id, invoice_id=second_id,
+            channel="email", direction="outbound", mode="manual", body="Sintético",
+            status="sent", created_at=timestamp,
+        ),
+    ]
+    links = [
+        models.MessageInvoice(
+            id=uuid.uuid4(), client_id=client_id, message_id=message_ids[0],
+            invoice_id=first_id, allocated_llm_cost=Decimal("0.10"),
+            allocated_messaging_cost=Decimal("0.02"), created_at=timestamp,
+        ),
+        models.MessageInvoice(
+            id=uuid.uuid4(), client_id=client_id, message_id=message_ids[1],
+            invoice_id=second_id, allocated_llm_cost=Decimal("0.05"),
+            allocated_messaging_cost=Decimal("0.01"), created_at=timestamp,
+        ),
+    ]
+    attributions = [
+        models.PaymentAttribution(
+            id=uuid.uuid4(), client_id=client_id, payment_id=payments[0].id,
+            invoice_id=first_id, category="preventive", percentage=Decimal("1"),
+            base_amount=Decimal("100000"), commission_amount=Decimal("1000"),
+            rationale={},
+        ),
+        models.PaymentAttribution(
+            id=uuid.uuid4(), client_id=client_id, payment_id=payments[1].id,
+            invoice_id=second_id, category="recovery", percentage=Decimal("2"),
+            base_amount=Decimal("100000"), commission_amount=Decimal("2000"),
+            rationale={},
+        ),
+    ]
+    exception = models.ExceptionCase(
+        id=uuid.uuid4(), client_id=client_id, invoice_id=second_id,
+        kind="payment_commitment", status="resolved", priority=1, detail={},
+        human_minutes=Decimal("30"), resolution={}, created_at=timestamp,
+    )
+    cause = models.DelayCause(
+        id=uuid.uuid4(), client_id=client_id, invoice_id=second_id,
+        category="purchase_order", source="fixture", created_at=timestamp,
+    )
+    item = models.PayabilityItem(
+        id=uuid.uuid4(), client_id=client_id, invoice_id=second_id,
+        item_type="purchase_order", label="Orden de compra", status="fulfilled",
+        required=True, blocks_payability=True, responsible_role="client", evidence={},
+        created_at=datetime(2026, 2, 1, tzinfo=timezone.utc),
+        updated_at=datetime(2026, 2, 2, tzinfo=timezone.utc),
+    )
+
+    class FakeSession:
+        def __init__(self) -> None:
+            self.results = iter(
+                (invoices, payments, [first_id, second_id], [exception], links, messages,
+                 [], [], attributions, [cause], [item])
+            )
+
+        def scalars(self, _statement: object):
+            return iter(next(self.results))
+
+    report = build_pilot_metrics(
+        FakeSession(), client=tenant, date_from=date(2026, 2, 1),
+        date_to=date(2026, 2, 28), human_hourly_cost_clp=Decimal("8000"),
+        usd_clp_rate=Decimal("950"),
+    )
+    assert report["outcomes"]["average_dso"] == Decimal("33.50")
+    assert report["outcomes"]["on_time_percent"] == Decimal("50.00")
+    assert report["outcomes"]["recovered_amount"] == Decimal("100000.00")
+    assert report["economics"]["margin_clp"] == Decimal("-1171.00")
+    assert report["resolution_times"][0]["average_hours"] == Decimal("24.00")
+
+
 def check_client_portal_calculation() -> None:
     client_id = uuid.uuid4()
     payer_id = uuid.uuid4()
@@ -733,6 +882,8 @@ def main() -> None:
         check_migrations_match_models,
         check_phase6_operational_assets,
         check_phase7_client_portal_assets,
+        check_phase7_pilot_metrics_assets,
+        check_pilot_metrics_calculation,
         check_client_portal_calculation,
         check_workflow_rules,
         check_complete_stage_windows,

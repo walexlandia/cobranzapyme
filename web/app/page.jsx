@@ -870,6 +870,7 @@ function ClientPortalPanel({ clientId, userRole, request, download, onOpenCheckl
   const [reviewNotes, setReviewNotes] = useState({});
   const [reviewing, setReviewing] = useState("");
   const [documentTarget, setDocumentTarget] = useState(null);
+  const [clientTrend, setClientTrend] = useState(null);
 
   const query = useCallback((dateField) => {
     const params = new URLSearchParams({ [dateField]: asOf });
@@ -885,10 +886,16 @@ function ClientPortalPanel({ clientId, userRole, request, download, onOpenCheckl
         request(`/api/v1/client-portal/summary?${query("as_of")}`),
         request(`/api/v1/client-portal/weekly-report?${query("week_ending")}`),
       ];
-      if (userRole !== "client") calls.push(request(`/api/v1/client-portal/document-submissions?client_id=${clientId}&status=pending`));
-      const [summaryResult, reportResult, submissionRows = []] = await Promise.all(calls);
+      if (userRole === "client") {
+        const start = new Date(`${asOf}T12:00:00`); start.setDate(start.getDate() - 83);
+        calls.push(request(`/api/v1/metrics/client-trend?date_from=${start.toISOString().slice(0, 10)}&date_to=${asOf}`));
+      } else {
+        calls.push(request(`/api/v1/client-portal/document-submissions?client_id=${clientId}&status=pending`));
+      }
+      const [summaryResult, reportResult, thirdResult] = await Promise.all(calls);
       setSummary(summaryResult); setReport(reportResult);
-      setSubmissions(submissionRows);
+      if (userRole === "client") { setClientTrend(thirdResult); setSubmissions([]); }
+      else { setSubmissions(thirdResult || []); setClientTrend(null); }
     } catch (error) {
       setMessage({ type: "error", text: error.message });
     } finally {
@@ -938,6 +945,7 @@ function ClientPortalPanel({ clientId, userRole, request, download, onOpenCheckl
       <Stat label="Pendientes de la pyme" value={totals?.pending_client_count ?? "—"} note="documentos o antecedentes" />
       <Stat label="Saldo abierto" value={totals ? money.format(Number(totals.outstanding_amount)) : "—"} note={`${totals?.dispute_count ?? 0} en disputa`} />
     </section>
+    {clientTrend && <article className="client-trend-card"><div className="card-heading"><div><p className="kicker">E10-05 · EVOLUCIÓN</p><h3>DSO y pago oportuno</h3></div><span className="read-only">Últimos 84 días</span></div><div className="trend-comparison"><div><span>DSO base</span><b>{clientTrend.baseline.dso ?? "—"} días</b><small>Actual: {clientTrend.outcomes.average_dso ?? "—"} días</small></div><div><span>Pago oportuno base</span><b>{clientTrend.baseline.on_time_percent ?? "—"}%</b><small>Actual: {clientTrend.outcomes.on_time_percent ?? "—"}%</small></div><div><span>Monto verificado</span><b>{money.format(Number(clientTrend.outcomes.verified_amount))}</b><small>{clientTrend.outcomes.settled_invoices} facturas saldadas</small></div></div><div className="mini-trend" aria-label="Tendencia semanal">{clientTrend.trend.map((point) => <div key={point.week_start} title={`${point.week_start}: ${point.on_time_percent ?? 0}% pago oportuno`}><span style={{ height: `${Math.max(Number(point.on_time_percent || 0), 4)}%` }} /><small>{point.week_start.slice(5)}</small></div>)}</div></article>}
     {userRole !== "client" && <article className="document-review-card"><div className="card-heading"><div><p className="kicker">E10-03 · REVISIÓN HUMANA</p><h3>Documentos pendientes</h3></div><span className="read-only">{submissions.length} por revisar</span></div><div className="document-review-list">{submissions.map((submission) => <article key={submission.id}><div><b>{submission.invoice_folio} · {submission.item_label}</b><span>{submission.original_name} · {submission.submitted_by_name}</span><small>SHA-256 {submission.content_sha256.slice(0, 16)}… · {new Date(submission.created_at).toLocaleString("es-CL")}</small></div><input aria-label={`Observación para ${submission.original_name}`} placeholder="Observación de revisión" value={reviewNotes[submission.id] || ""} onChange={(event) => setReviewNotes((current) => ({ ...current, [submission.id]: event.target.value }))} /><div className="button-row"><button type="button" className="mini-button danger" disabled={reviewing === submission.id} onClick={() => reviewDocument(submission, "rejected")}>Rechazar</button><button type="button" className="mini-button" disabled={reviewing === submission.id} onClick={() => reviewDocument(submission, "accepted")}>Aceptar</button></div></article>)}{!submissions.length && <p className="empty">No hay documentos pendientes para este cliente.</p>}</div></article>}
     <article className="table-card">
       <div className="card-heading"><div><p className="kicker">CARTERA AL {asOf}</p><h3>Estado y checklist</h3></div><span className="read-only">Vista sin acciones operativas</span></div>
@@ -948,6 +956,48 @@ function ClientPortalPanel({ clientId, userRole, request, download, onOpenCheckl
       </tbody></table></div>
     </article>
     {documentTarget && <DocumentUploadDialog invoice={documentTarget} request={request} onClose={() => setDocumentTarget(null)} onUploaded={(submission) => { setDocumentTarget(null); setMessage({ type: "success", text: `${submission.original_name} quedó cifrado y pendiente de revisión.` }); load(); }} />}
+  </section>;
+}
+
+function MetricsPanel({ clientId, request, download }) {
+  const today = new Date().toISOString().slice(0, 10);
+  const initialStart = new Date(); initialStart.setDate(initialStart.getDate() - 83);
+  const [filters, setFilters] = useState({ date_from: initialStart.toISOString().slice(0, 10), date_to: today, human_hourly_cost_clp: "8000", usd_clp_rate: "950" });
+  const [report, setReport] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState(null);
+
+  const params = useCallback(() => new URLSearchParams({ client_id: clientId, ...filters }).toString(), [clientId, filters]);
+  const load = useCallback(async () => {
+    if (!clientId) return;
+    setLoading(true); setMessage(null);
+    try { setReport(await request(`/api/v1/metrics/pilot?${params()}`)); }
+    catch (error) { setMessage({ type: "error", text: error.message }); }
+    finally { setLoading(false); }
+  }, [clientId, params, request]);
+  useEffect(() => { load(); }, [load]);
+
+  function change(event) { setFilters((current) => ({ ...current, [event.target.name]: event.target.value })); }
+  async function exportCsv() {
+    try { await download(`/api/v1/metrics/pilot.csv?${params()}`, `metricas-piloto-${filters.date_to}.csv`); setMessage({ type: "success", text: "Métricas exportadas en CSV." }); }
+    catch (error) { setMessage({ type: "error", text: error.message }); }
+  }
+  const percentage = (value) => value == null ? "—" : `${Number(value).toLocaleString("es-CL", { maximumFractionDigits: 1 })}%`;
+  const decimal = (value, suffix = "") => value == null ? "—" : `${Number(value).toLocaleString("es-CL", { maximumFractionDigits: 1 })}${suffix}`;
+
+  return <section className="metrics-layout">
+    <Message value={message} onClose={() => setMessage(null)} />
+    <article className="metrics-hero"><div><p className="kicker">FASE 7.3 · E11-02 A E11-07</p><h3>Métricas del piloto</h3><p>Resultados, operación y economía trazables desde pagos verificados, eventos y revisiones humanas.</p></div><div className="metrics-filters"><label>Desde<input type="date" name="date_from" value={filters.date_from} onChange={change} /></label><label>Hasta<input type="date" name="date_to" value={filters.date_to} onChange={change} /></label><label>Costo humano CLP/h<input type="number" min="0" name="human_hourly_cost_clp" value={filters.human_hourly_cost_clp} onChange={change} /></label><label>CLP por USD<input type="number" min="1" name="usd_clp_rate" value={filters.usd_clp_rate} onChange={change} /></label><button type="button" className="secondary" onClick={load} disabled={loading}>{loading ? "Calculando…" : "Calcular"}</button><button type="button" className="primary" onClick={exportCsv} disabled={!report}>Exportar CSV</button></div></article>
+    {report && <>
+      <section className="stats-grid"><Stat label="Facturas gestionadas" value={report.outcomes.managed_invoices} note={`${report.outcomes.settled_invoices} saldadas`} /><Stat label="Pago oportuno" value={percentage(report.outcomes.on_time_percent)} note={`base ${percentage(report.baseline.on_time_percent)}`} /><Stat label="DSO promedio" value={decimal(report.outcomes.average_dso, " días")} note={`base ${decimal(report.baseline.dso, " días")}`} /><Stat label="Monto recuperado" value={money.format(Number(report.outcomes.recovered_amount))} note="pagos posteriores al vencimiento" /><Stat label="Minutos humanos" value={decimal(report.operations.human_minutes)} note="registrados en excepciones" /><Stat label="Costo por factura" value={report.economics.cost_per_managed_invoice_clp == null ? "—" : money.format(Number(report.economics.cost_per_managed_invoice_clp))} note="tecnología + operación" /><Stat label="Comisiones" value={money.format(Number(report.economics.commission_clp))} note="atribuciones verificadas" /><Stat label="Margen estimado" value={money.format(Number(report.economics.margin_clp))} note="con supuestos editables" /></section>
+      <section className="metrics-grid">
+        <article className="metric-card wide-card"><div className="card-heading"><div><p className="kicker">E11-03</p><h3>Tendencia semanal</h3></div><span className="read-only">{report.date_from} al {report.date_to}</span></div><div className="table-wrap"><table><thead><tr><th>Semana</th><th>Saldadas</th><th>Pago oportuno</th><th>DSO</th><th>Monto verificado</th></tr></thead><tbody>{report.trend.map((point) => <tr key={point.week_start}><td><b>{point.week_start}</b><small>al {point.week_end}</small></td><td>{point.settled_invoices}</td><td>{percentage(point.on_time_percent)}</td><td>{decimal(point.average_dso, " días")}</td><td className="number">{money.format(Number(point.verified_amount))}</td></tr>)}</tbody></table></div></article>
+        <article className="metric-card"><div className="card-heading"><div><p className="kicker">E11-05</p><h3>Automatización</h3></div></div><div className="automation-list">{[["Mensajes", report.operations.messages], ["Clasificaciones", report.operations.classifications], ["Conciliaciones", report.operations.reconciliations]].map(([label, item]) => <div key={label}><span>{label}</span><b>{percentage(item.automatic_percent)}</b><small>{item.automatic} automáticas · {item.manual} manuales</small><progress max="100" value={Number(item.automatic_percent || 0)} /></div>)}</div></article>
+        <article className="metric-card"><div className="card-heading"><div><p className="kicker">E11-02</p><h3>Economía del piloto</h3></div></div><dl className="metric-definition"><div><dt>Costo humano</dt><dd>{money.format(Number(report.economics.human_cost_clp))}</dd></div><div><dt>Costo tecnológico</dt><dd>{money.format(Number(report.economics.technology_cost_clp))}</dd></div><div><dt>Costo total</dt><dd>{money.format(Number(report.economics.total_cost_clp))}</dd></div><div><dt>LLM / mensajería</dt><dd>USD {Number(report.economics.llm_cost_usd).toFixed(4)} / {Number(report.economics.messaging_cost_usd).toFixed(4)}</dd></div></dl><p className="metric-note">{report.assumptions.note}</p></article>
+        <article className="metric-card"><div className="card-heading"><div><p className="kicker">E11-06</p><h3>Causas de atraso</h3></div></div><div className="rank-list">{report.delay_causes.map((item) => <div key={item.category}><span>{item.category.replaceAll("_", " ")}</span><b>{item.invoice_count}</b><small>{money.format(Number(item.amount))}</small></div>)}{!report.delay_causes.length && <p className="empty">Sin causas registradas.</p>}</div></article>
+        <article className="metric-card"><div className="card-heading"><div><p className="kicker">E11-07</p><h3>Resolución documental</h3></div></div><div className="rank-list">{report.resolution_times.map((item) => <div key={item.item_type}><span>{item.item_type.replaceAll("_", " ")}</span><b>{decimal(item.average_hours, " h")}</b><small>{item.resolved_count} requisitos resueltos</small></div>)}{!report.resolution_times.length && <p className="empty">Sin requisitos resueltos en el período.</p>}</div></article>
+      </section>
+    </>}
   </section>;
 }
 
@@ -1427,6 +1477,7 @@ export default function Home() {
     exceptions: ["IA SUPERVISADA", "Clasificación y excepciones"],
     payments: ["PAGOS", "Conciliación supervisada"],
     access: ["SEGURIDAD", "Registro de accesos"],
+    metrics: ["PILOTO", "Métricas operativas y económicas"],
   }[activeView];
 
   if (!user) return <Login apiUrl={apiUrl} apiState={apiState} onAuthenticated={startSession} />;
@@ -1445,6 +1496,7 @@ export default function Home() {
           {canOperate && <button className={activeView === "exceptions" ? "active" : ""} onClick={() => setActiveView("exceptions")}><i>06</i>Excepciones</button>}
           {canOperate && <button className={activeView === "payments" ? "active" : ""} onClick={() => setActiveView("payments")}><i>07</i>Pagos</button>}
           {user?.role === "admin" && <button className={activeView === "access" ? "active" : ""} onClick={() => setActiveView("access")}><i>08</i>Accesos</button>}
+          {canOperate && <button className={activeView === "metrics" ? "active" : ""} onClick={() => setActiveView("metrics")}><i>10</i>Métricas</button>}
         </nav>
         <div className="session-card">
           <span>{user.role}</span><b>{user.full_name}</b><small>{user.email}</small><button type="button" onClick={logout}>Cerrar sesión</button>
@@ -1536,6 +1588,8 @@ export default function Home() {
           <ExceptionsPanel clientId={selectedClientId} request={request} />
         ) : activeView === "payments" ? (
           <PaymentsPanel clientId={selectedClientId} invoices={invoices} request={request} onChanged={loadInvoices} />
+        ) : activeView === "metrics" ? (
+          <MetricsPanel clientId={selectedClientId} request={request} download={download} />
         ) : (
           <AccessLogsPanel request={request} />
         )}
