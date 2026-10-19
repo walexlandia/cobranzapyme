@@ -1034,6 +1034,26 @@ class ClientTrendView(BaseModel):
     trend: list[PilotTrendPoint] = Field(default_factory=list)
 
 
+class FinalPilotReportView(BaseModel):
+    schema_version: str
+    date_from: date
+    date_to: date
+    period_days: int
+    evidence_kind: Literal["synthetic", "authorized_pilot"]
+    minimum_group_size: int
+    portfolio: dict[str, Any]
+    client_comparisons: list[dict[str, Any]] = Field(default_factory=list)
+    segments: list[dict[str, Any]] = Field(default_factory=list)
+    suppressed_groups: list[dict[str, Any]] = Field(default_factory=list)
+    hypotheses: list[dict[str, Any]] = Field(default_factory=list)
+    payer_concentration_percent: Decimal | None
+    g4: dict[str, Any]
+    privacy: dict[str, Any]
+    assumptions: dict[str, Any]
+    fingerprint_sha256: str
+    generated_at: datetime
+
+
 class PilotLogCreate(BaseModel):
     client_id: uuid.UUID
     entry_type: Literal["decision", "incident", "manual_work", "rule_change", "learning"]

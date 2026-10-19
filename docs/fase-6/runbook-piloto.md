@@ -52,6 +52,7 @@ Para probar el procedimiento sin exponer puertos ni tocar la base de desarrollo,
 ## 5. Documentos y claves
 
 - Definir `DOCUMENT_ENCRYPTION_KEY` con un secreto distinto por entorno.
+- Definir `REPORT_ANONYMIZATION_KEY` con un secreto independiente para seudónimos de reportes.
 - Ejecutar `python -m app.encrypt_documents` después de migrar para cifrar documentos legados.
 - Respaldar la clave fuera del servidor; perderla vuelve irrecuperables los comprobantes.
 - Rotar la clave requiere un procedimiento explícito de descifrado/re-cifrado, no una edición directa en base.

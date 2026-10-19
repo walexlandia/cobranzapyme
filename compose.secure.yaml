@@ -3,6 +3,7 @@ services:
     environment:
       ENVIRONMENT: ${ENVIRONMENT:-demo}
       DOCUMENT_ENCRYPTION_KEY: ${DOCUMENT_ENCRYPTION_KEY:?DOCUMENT_ENCRYPTION_KEY is required}
+      REPORT_ANONYMIZATION_KEY: ${REPORT_ANONYMIZATION_KEY:?REPORT_ANONYMIZATION_KEY is required}
     command: sh -c "alembic upgrade head && python -m app.encrypt_documents && python -m app.seed && uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers"
     ports: !reset []
 

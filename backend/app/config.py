@@ -20,6 +20,10 @@ class Settings(BaseSettings):
         default="local-document-key-change-before-pilot-2026",
         min_length=32,
     )
+    report_anonymization_key: str = Field(
+        default="local-report-key-change-before-real-pilot-2026",
+        min_length=32,
+    )
     minio_endpoint: str = "minio:9000"
     minio_secure: bool = False
     minio_bucket: str = "recupera-documents"

@@ -3,7 +3,7 @@ import io
 import uuid
 from datetime import date, timedelta
 from decimal import Decimal
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy.orm import Session
@@ -11,8 +11,13 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.domain import Role
 from app.models import Client, User
-from app.schemas import ClientTrendView, PilotMetricsView
+from app.schemas import ClientTrendView, FinalPilotReportView, PilotMetricsView
 from app.security import CurrentUser, require_roles
+from app.services.final_report import (
+    anonymized_dataset_csv,
+    build_final_report,
+    final_report_markdown,
+)
 from app.services.pilot_metrics import build_pilot_metrics
 
 
@@ -46,6 +51,32 @@ def _report(
             date_to=end,
             human_hourly_cost_clp=human_hourly_cost_clp,
             usd_clp_rate=usd_clp_rate,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+def _final_report(
+    db: Session,
+    *,
+    date_from: date | None,
+    date_to: date | None,
+    human_hourly_cost_clp: Decimal,
+    usd_clp_rate: Decimal,
+    minimum_group_size: int,
+    evidence_kind: Literal["synthetic", "authorized_pilot"],
+) -> dict:
+    end = date_to or date.today()
+    start = date_from or (end - timedelta(days=55))
+    try:
+        return build_final_report(
+            db,
+            date_from=start,
+            date_to=end,
+            human_hourly_cost_clp=human_hourly_cost_clp,
+            usd_clp_rate=usd_clp_rate,
+            minimum_group_size=minimum_group_size,
+            evidence_kind=evidence_kind,
         )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
@@ -162,3 +193,87 @@ def client_trend(
         "outcomes": report["outcomes"],
         "trend": report["trend"],
     }
+
+
+@router.get("/final-report", response_model=FinalPilotReportView)
+def final_report(
+    _: Operator,
+    db: Annotated[Session, Depends(get_db)],
+    date_from: Annotated[date | None, Query()] = None,
+    date_to: Annotated[date | None, Query()] = None,
+    human_hourly_cost_clp: Annotated[Decimal, Query(ge=0)] = Decimal("8000"),
+    usd_clp_rate: Annotated[Decimal, Query(gt=0)] = Decimal("950"),
+    minimum_group_size: Annotated[int, Query(ge=1, le=50)] = 2,
+    evidence_kind: Annotated[Literal["synthetic", "authorized_pilot"], Query()] = "synthetic",
+) -> dict:
+    return _final_report(
+        db,
+        date_from=date_from,
+        date_to=date_to,
+        human_hourly_cost_clp=human_hourly_cost_clp,
+        usd_clp_rate=usd_clp_rate,
+        minimum_group_size=minimum_group_size,
+        evidence_kind=evidence_kind,
+    )
+
+
+@router.get("/anonymized-dataset.csv")
+def final_report_dataset_csv(
+    _: Operator,
+    db: Annotated[Session, Depends(get_db)],
+    date_from: Annotated[date | None, Query()] = None,
+    date_to: Annotated[date | None, Query()] = None,
+    human_hourly_cost_clp: Annotated[Decimal, Query(ge=0)] = Decimal("8000"),
+    usd_clp_rate: Annotated[Decimal, Query(gt=0)] = Decimal("950"),
+    minimum_group_size: Annotated[int, Query(ge=1, le=50)] = 2,
+    evidence_kind: Annotated[Literal["synthetic", "authorized_pilot"], Query()] = "synthetic",
+) -> Response:
+    report = _final_report(
+        db,
+        date_from=date_from,
+        date_to=date_to,
+        human_hourly_cost_clp=human_hourly_cost_clp,
+        usd_clp_rate=usd_clp_rate,
+        minimum_group_size=minimum_group_size,
+        evidence_kind=evidence_kind,
+    )
+    return Response(
+        content=anonymized_dataset_csv(report),
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": (
+                f'attachment; filename="dataset-piloto-anonimizado-{report["date_to"]}.csv"'
+            )
+        },
+    )
+
+
+@router.get("/final-report.md")
+def final_report_document(
+    _: Operator,
+    db: Annotated[Session, Depends(get_db)],
+    date_from: Annotated[date | None, Query()] = None,
+    date_to: Annotated[date | None, Query()] = None,
+    human_hourly_cost_clp: Annotated[Decimal, Query(ge=0)] = Decimal("8000"),
+    usd_clp_rate: Annotated[Decimal, Query(gt=0)] = Decimal("950"),
+    minimum_group_size: Annotated[int, Query(ge=1, le=50)] = 2,
+    evidence_kind: Annotated[Literal["synthetic", "authorized_pilot"], Query()] = "synthetic",
+) -> Response:
+    report = _final_report(
+        db,
+        date_from=date_from,
+        date_to=date_to,
+        human_hourly_cost_clp=human_hourly_cost_clp,
+        usd_clp_rate=usd_clp_rate,
+        minimum_group_size=minimum_group_size,
+        evidence_kind=evidence_kind,
+    )
+    return Response(
+        content=final_report_markdown(report),
+        media_type="text/markdown; charset=utf-8",
+        headers={
+            "Content-Disposition": (
+                f'attachment; filename="informe-final-v10-{report["date_to"]}.md"'
+            )
+        },
+    )

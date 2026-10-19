@@ -50,6 +50,11 @@ from app.services.invoice_import import (  # noqa: E402
     parse_invoice_file,
     parse_sii_status_file,
 )
+from app.services.final_report import (  # noqa: E402
+    amount_band,
+    anonymized_alias,
+    evaluate_g4,
+)
 from app.services.payability import checklist_status, requirement_specs  # noqa: E402
 from app.services.payments import parse_bank_statement_file  # noqa: E402
 from app.services.pilot_metrics import (  # noqa: E402
@@ -581,6 +586,7 @@ def check_phase6_operational_assets() -> None:
     assert "sleep 86400" in compose
     assert "pg_dump --format=custom" in compose
     assert "DOCUMENT_ENCRYPTION_KEY" in secure and ":?" in secure
+    assert "REPORT_ANONYMIZATION_KEY" in secure
     assert "ports: !reset []" in secure
     assert "ssl_protocols TLSv1.2 TLSv1.3" in nginx
     assert (ROOT / "scripts" / "backup-postgres.ps1").is_file()
@@ -664,6 +670,56 @@ def check_phase7_pilot_operations_assets() -> None:
     assert "status_code == 403" in tests and "status_code == 404" in tests
     for name in ("runbook-operacion.md", "guion-demostracion.md", "checklist-g4.md"):
         assert (ROOT / "docs" / "fase-7" / name).is_file()
+
+
+def check_phase8_final_report_assets() -> None:
+    router = (ROOT / "backend" / "app" / "routers" / "metrics.py").read_text(
+        encoding="utf-8"
+    )
+    service = (ROOT / "backend" / "app" / "services" / "final_report.py").read_text(
+        encoding="utf-8"
+    )
+    interface = (ROOT / "web" / "app" / "page.jsx").read_text(encoding="utf-8")
+    tests = (ROOT / "backend" / "tests" / "test_final_report.py").read_text(
+        encoding="utf-8"
+    )
+    assert "anonymized-dataset.csv" in router and "final-report.md" in router
+    assert "HMAC-SHA256 aliases" in service and "minimum_group_size" in service
+    assert "FinalReportPanel" in interface and "Matriz G4" in interface
+    assert "cannot_approve_synthetic_g4" in tests and "status_code == 403" in tests
+    assert amount_band(Decimal("499999")) == "menos_de_500k"
+    assert amount_band(Decimal("500000")) == "500k_a_2m"
+    identifier = uuid.UUID("11111111-1111-1111-1111-111111111111")
+    key = "offline-check-key-with-at-least-32-characters"
+    assert anonymized_alias("client", identifier, key) == anonymized_alias(
+        "client", identifier, key
+    )
+    assert anonymized_alias("client", identifier, key).startswith("PYME-")
+    hypotheses = [
+        {"key": "outcome_improvement", "state": "confirmed"},
+        {"key": "documentary_relevance", "state": "confirmed"},
+        {"key": "positive_unit_economics", "state": "confirmed"},
+    ]
+    synthetic = evaluate_g4(
+        evidence_kind="synthetic",
+        period_days=56,
+        client_count=3,
+        settled_invoices=30,
+        hypotheses=hypotheses,
+        payer_concentration_percent=Decimal("40"),
+    )
+    assert synthetic["ready"] is False and synthetic["recommendation"] == "pending"
+    authorized = evaluate_g4(
+        evidence_kind="authorized_pilot",
+        period_days=56,
+        client_count=3,
+        settled_invoices=30,
+        hypotheses=hypotheses,
+        payer_concentration_percent=Decimal("40"),
+    )
+    assert authorized["ready"] is True and authorized["recommendation"] == "scale"
+    for name in ("estado.md", "metodologia-informe.md", "matriz-g4.md"):
+        assert (ROOT / "docs" / "fase-8" / name).is_file()
 
 
 def check_pilot_metrics_calculation() -> None:
@@ -927,6 +983,7 @@ def main() -> None:
         check_phase7_client_portal_assets,
         check_phase7_pilot_metrics_assets,
         check_phase7_pilot_operations_assets,
+        check_phase8_final_report_assets,
         check_pilot_metrics_calculation,
         check_client_portal_calculation,
         check_workflow_rules,

@@ -132,6 +132,15 @@ El incremento 7.4 cierra el alcance técnico local de la fase 7 con:
 - datos sintéticos idempotentes para recorrer la operación;
 - runbook, guion de demostración y checklist de preparación G4, manteniendo la decisión final pendiente de evidencia real.
 
+El incremento 8.1 agrega el cierre medible del piloto:
+
+- informe final V-10 reproducible en JSON y Markdown, con parámetros y huella SHA-256;
+- dataset CSV agregado y anonimizado mediante alias HMAC-SHA256 y supresión de grupos pequeños;
+- comparación de DSO, pago oportuno, costo humano y margen por pyme contra su línea base;
+- análisis por pagador, causa y tramo de monto sin exponer nombres, RUT, folios ni IDs internos;
+- clasificación explícita de hipótesis confirmadas, rechazadas e inciertas;
+- matriz G4 para escalar, iterar, pivotar o detener, bloqueada como pendiente para evidencia sintética.
+
 ## Servicios
 
 - `db`: PostgreSQL 16.
