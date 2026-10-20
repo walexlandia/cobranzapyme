@@ -412,7 +412,7 @@ td small { display: block; margin-top: 3px; color: var(--ink-soft); }
 .evidence-banner p:not(.kicker) { margin: 0; color: var(--ink-soft); font-size: .7rem; }
 .evidence-banner > div:last-child { display: grid; gap: 4px; min-width: 210px; text-align: right; }
 .evidence-banner span, .evidence-banner small { color: var(--ink-soft); font-size: .62rem; }
-.report-actions { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 12px; padding: 18px 22px; border: 1px solid var(--line); background: var(--surface); }
+.report-actions { display: grid; grid-template-columns: 1fr auto auto auto; align-items: center; gap: 12px; padding: 18px 22px; border: 1px solid var(--line); background: var(--surface); }
 .report-actions b, .report-actions span { display: block; }
 .report-actions span { max-width: 720px; margin-top: 4px; color: var(--ink-soft); font-size: .65rem; line-height: 1.45; }
 .hypothesis-list, .g4-matrix, .g4-checks { display: grid; gap: 9px; padding: 0 24px 24px; }
@@ -434,6 +434,23 @@ td small { display: block; margin-top: 3px; color: var(--ink-soft); }
 .status-pill.improved { color: var(--green); background: var(--green-soft); }
 .status-pill.declined { color: #8d3027; background: #f8e9e7; }
 .status-pill.mixed, .status-pill.insufficient_data { color: #7a5b23; background: #fff1d2; }
+.backlog-priority-list { display: grid; gap: 10px; padding: 0 24px 24px; }
+.backlog-priority-list > div { display: grid; grid-template-columns: 30px 1fr; align-items: start; gap: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+.backlog-priority-list i { display: grid; place-items: center; width: 27px; height: 27px; border-radius: 50%; color: #fff; font-size: .64rem; font-style: normal; background: var(--green); }
+.backlog-priority-list b, .backlog-priority-list small { display: block; }
+.backlog-priority-list b { font-size: .68rem; line-height: 1.4; }
+.backlog-priority-list small { margin-top: 3px; color: var(--ink-soft); font-size: .6rem; line-height: 1.4; }
+.closure-history { border: 1px solid var(--line); background: var(--surface); box-shadow: 0 9px 30px rgba(25, 45, 38, .04); }
+.closure-list { display: grid; gap: 10px; padding: 0 24px 24px; }
+.closure-list > article { display: grid; grid-template-columns: minmax(220px, .7fr) minmax(200px, .6fr) minmax(320px, 1fr); align-items: center; gap: 16px; padding: 14px; border: 1px solid var(--line); background: #fbfaf6; }
+.closure-meta b, .closure-meta small, .closure-list article > div:nth-child(2) span, .closure-list article > div:nth-child(2) b, .closure-list article > div:nth-child(2) small { display: block; }
+.closure-meta b { margin-top: 7px; font-size: .7rem; }
+.closure-meta small, .closure-list article > div:nth-child(2) span, .closure-list article > div:nth-child(2) small { margin-top: 4px; color: var(--ink-soft); font-size: .6rem; line-height: 1.4; }
+.closure-decision { display: grid; grid-template-columns: 120px 1fr auto; gap: 8px; align-items: center; }
+.closure-decision textarea { min-height: 64px; }
+.closure-note { margin: 0; color: var(--ink-soft); font-size: .65rem; }
+.status-pill.prepared { color: #7a5b23; background: #fff1d2; }
+.status-pill.decided { color: var(--green); background: var(--green-soft); }
 .client-escalations, .demo-walkthrough, .pilot-log-form-card, .pilot-log-card { border: 1px solid var(--line); background: var(--surface); box-shadow: 0 9px 30px rgba(25, 45, 38, .04); }
 .client-escalation-list, .pilot-log-list { display: grid; gap: 10px; padding: 0 24px 24px; }
 .client-escalation-list > article { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(220px, .8fr) auto; align-items: center; gap: 14px; padding: 14px; border: 1px solid var(--line); background: #fbfaf6; }
@@ -503,6 +520,8 @@ td small { display: block; margin-top: 3px; color: var(--ink-soft); }
   .walkthrough-steps { grid-template-columns: repeat(2, 1fr); }
   .client-escalation-list > article { grid-template-columns: 1fr; }
   .report-actions { grid-template-columns: 1fr; }
+  .closure-list > article { grid-template-columns: 1fr; }
+  .closure-decision { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 760px) {

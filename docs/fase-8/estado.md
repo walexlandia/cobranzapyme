@@ -15,6 +15,23 @@
 | Hipótesis | Completo como instrumento | Estados confirmada, rechazada o incierta para resultado, relevancia documental y economía |
 | Matriz G4 | Completo como instrumento | Escalar, iterar, pivotar o detener con controles mínimos; el seed solo puede producir una decisión pendiente |
 
+## Incremento 8.2 — Unit economics y cierre formal G4
+
+| Entregable | Estado local | Evidencia |
+|---|---|---|
+| Sensibilidad económica | Completo localmente | Escenarios conservador, observado y eficiente con comisión, costo humano, tecnología, costo por factura y margen |
+| Snapshot reproducible | Completo localmente | Informe completo persistido por huella única; reintentos devuelven el mismo snapshot |
+| Separación de funciones | Completo | Operador o administrador prepara; solo otro administrador puede registrar la decisión |
+| Bloqueo sintético | Completo | Un snapshot sin evidencia autorizada o mínimos G4 nunca acepta una decisión |
+| Decisión inmutable | Completo | Una vez decidida no puede reemplazarse por API; registra responsable, fecha y justificación |
+| Evidencia vigente | Completo | Antes de decidir se recalcula la huella; cualquier cambio exige preparar un snapshot nuevo |
+| Auditoría por pyme | Completo | Eventos `pilot.closure_prepared` y `pilot.g4_decided` para cada cliente activo incluido |
+| Backlog por evidencia | Completo localmente | Prioridades deterministas según resultado, hipótesis documental, economía, concentración y recomendación G4 |
+
+La migración `0015` agrega `pilot_closure_snapshots`. El snapshot conserva exclusivamente el informe agregado y anonimizado, los escenarios económicos y el backlog priorizado; no almacena nombres, RUT, folios, contactos ni UUID de clientes o pagadores.
+
+Documento de continuidad: `docs/fase-8/backlog-posterior.md`.
+
 ## Límites deliberados
 
 - No se agregaron tablas ni datos de resultado inventados: el cierre se calcula desde los registros auditables existentes.
@@ -32,7 +49,9 @@ La funcionalidad permite cerrar el informe, pero los datos sintéticos no valida
 ## Validación local
 
 - Compilación Python aprobada para aplicación, pruebas y scripts.
-- 27 comprobaciones offline aprobadas, incluida la invariancia de G4 ante evidencia sintética.
-- Build de producción Next.js aprobado usando la imagen local `recupera-web:phase7-4` y los archivos de Fase 8.1 montados sin red.
-- Prueba HTTP/PostgreSQL preparada en `backend/tests/test_final_report.py` para privacidad, exportaciones y control de roles.
+- 27 comprobaciones offline aprobadas, incluidas migración `0015`, escenarios económicos, backlog y contratos de cierre G4.
+- Build de producción Next.js aprobado usando la imagen local `recupera-web:phase7-4` y los archivos de Fase 8.2 montados sin red.
+- Esquema completo de 37 tablas creado en PostgreSQL 16 dentro de una base desechable.
+- Trigger de cierre probado en PostgreSQL: bloquea cambios de evidencia, segunda decisión y borrado; permite únicamente la primera transición válida a `decided`.
+- Prueba HTTP/PostgreSQL preparada en `backend/tests/test_final_report.py` para privacidad, exportaciones, snapshot idempotente, evidencia obsoleta, bloqueo sintético, separación de funciones e inmutabilidad.
 - La ejecución integral de `pytest` queda pendiente: el runtime backend no está disponible localmente y Docker no puede descargar dependencias por el firewall.

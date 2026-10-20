@@ -53,7 +53,9 @@ from app.services.invoice_import import (  # noqa: E402
 from app.services.final_report import (  # noqa: E402
     amount_band,
     anonymized_alias,
+    build_economics_scenarios,
     evaluate_g4,
+    prioritize_backlog,
 )
 from app.services.payability import checklist_status, requirement_specs  # noqa: E402
 from app.services.payments import parse_bank_statement_file  # noqa: E402
@@ -440,6 +442,9 @@ def check_openapi_contract() -> None:
             in schema["paths"]
         )
         assert "PilotLogEntryView" in schema["components"]["schemas"]
+        assert "/api/v1/metrics/closures" in schema["paths"]
+        assert "/api/v1/metrics/closures/{closure_id}/decision" in schema["paths"]
+        assert "PilotClosureSnapshotView" in schema["components"]["schemas"]
     finally:
         if previous_module is None:
             sys.modules.pop("pydantic_settings", None)
@@ -468,6 +473,7 @@ def check_schema_compiles_for_postgresql() -> None:
         "pilot_authorization_events",
         "client_document_submissions",
         "pilot_log_entries",
+        "pilot_closure_snapshots",
     }
     assert set(Base.metadata.tables) == expected
     dialect = postgresql.dialect()
@@ -475,7 +481,8 @@ def check_schema_compiles_for_postgresql() -> None:
         sql = str(CreateTable(table).compile(dialect=dialect))
         assert "CREATE TABLE" in sql
     private_tables = expected - {
-        "clients", "users", "payers", "payer_profiles", "payer_profile_revisions"
+        "clients", "users", "payers", "payer_profiles", "payer_profile_revisions",
+        "pilot_closure_snapshots",
     }
     for table_name in private_tables:
         assert "client_id" in Base.metadata.tables[table_name].columns
@@ -509,8 +516,8 @@ def check_migration_chain() -> None:
         if down_revision is not None:
             assert down_revision in revisions, f"Unknown parent {down_revision} in {path.name}"
             heads.discard(down_revision)
-    assert heads == {"0014"}, f"Unexpected migration heads: {sorted(heads)}"
-    current: str | None = "0014"
+    assert heads == {"0015"}, f"Unexpected migration heads: {sorted(heads)}"
+    current: str | None = "0015"
     visited = []
     while current is not None:
         assert current not in visited, f"Migration cycle at {current}"
@@ -683,10 +690,17 @@ def check_phase8_final_report_assets() -> None:
     tests = (ROOT / "backend" / "tests" / "test_final_report.py").read_text(
         encoding="utf-8"
     )
+    migration = (
+        ROOT / "backend" / "migrations" / "versions" / "0015_pilot_closure.py"
+    ).read_text(encoding="utf-8")
     assert "anonymized-dataset.csv" in router and "final-report.md" in router
+    assert "pilot.closure_prepared" in router and "pilot.g4_decided" in router
     assert "HMAC-SHA256 aliases" in service and "minimum_group_size" in service
     assert "FinalReportPanel" in interface and "Matriz G4" in interface
+    assert "Sensibilidad de margen" in interface and "Snapshots y decisiones G4" in interface
     assert "cannot_approve_synthetic_g4" in tests and "status_code == 403" in tests
+    assert "protect_pilot_closure_snapshot" in migration
+    assert (ROOT / "scripts" / "postgres_closure_checks.sql").is_file()
     assert amount_band(Decimal("499999")) == "menos_de_500k"
     assert amount_band(Decimal("500000")) == "500k_a_2m"
     identifier = uuid.UUID("11111111-1111-1111-1111-111111111111")
@@ -702,6 +716,7 @@ def check_phase8_final_report_assets() -> None:
     ]
     synthetic = evaluate_g4(
         evidence_kind="synthetic",
+        authorization_coverage_complete=False,
         period_days=56,
         client_count=3,
         settled_invoices=30,
@@ -711,6 +726,7 @@ def check_phase8_final_report_assets() -> None:
     assert synthetic["ready"] is False and synthetic["recommendation"] == "pending"
     authorized = evaluate_g4(
         evidence_kind="authorized_pilot",
+        authorization_coverage_complete=True,
         period_days=56,
         client_count=3,
         settled_invoices=30,
@@ -718,7 +734,34 @@ def check_phase8_final_report_assets() -> None:
         payer_concentration_percent=Decimal("40"),
     )
     assert authorized["ready"] is True and authorized["recommendation"] == "scale"
-    for name in ("estado.md", "metodologia-informe.md", "matriz-g4.md"):
+    scenarios = build_economics_scenarios(
+        {
+            "commission_clp": Decimal("100000"),
+            "total_cost_clp": Decimal("80000"),
+            "human_minutes": Decimal("300"),
+            "managed_invoices": 10,
+        },
+        {"human_hourly_cost_clp": Decimal("10000")},
+    )
+    assert [item["key"] for item in scenarios] == [
+        "conservative",
+        "observed",
+        "efficient",
+    ]
+    assert scenarios[1]["margin_clp"] == Decimal("20000.00")
+    backlog = prioritize_backlog(
+        hypotheses,
+        payer_concentration_percent=Decimal("70"),
+        g4_recommendation="iterate",
+    )
+    assert any(item["key"] == "diversify_payers" for item in backlog)
+    assert [item["priority"] for item in backlog] == list(range(1, len(backlog) + 1))
+    for name in (
+        "estado.md",
+        "metodologia-informe.md",
+        "matriz-g4.md",
+        "backlog-posterior.md",
+    ):
         assert (ROOT / "docs" / "fase-8" / name).is_file()
 
 

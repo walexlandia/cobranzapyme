@@ -1046,12 +1046,51 @@ class FinalPilotReportView(BaseModel):
     segments: list[dict[str, Any]] = Field(default_factory=list)
     suppressed_groups: list[dict[str, Any]] = Field(default_factory=list)
     hypotheses: list[dict[str, Any]] = Field(default_factory=list)
+    economics_scenarios: list[dict[str, Any]] = Field(default_factory=list)
+    backlog_priorities: list[dict[str, Any]] = Field(default_factory=list)
     payer_concentration_percent: Decimal | None
     g4: dict[str, Any]
+    authorization_coverage: dict[str, Any]
     privacy: dict[str, Any]
     assumptions: dict[str, Any]
     fingerprint_sha256: str
     generated_at: datetime
+
+
+class PilotClosureCreate(BaseModel):
+    date_from: date
+    date_to: date
+    human_hourly_cost_clp: Decimal = Field(default=Decimal("8000"), ge=0)
+    usd_clp_rate: Decimal = Field(default=Decimal("950"), gt=0)
+    minimum_group_size: int = Field(default=2, ge=1, le=50)
+    evidence_kind: Literal["synthetic", "authorized_pilot"] = "synthetic"
+
+
+class PilotClosureDecision(BaseModel):
+    decision: Literal["scale", "iterate", "pivot", "stop"]
+    rationale: str = Field(min_length=20, max_length=4000)
+
+
+class PilotClosureSnapshotView(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    report_fingerprint: str
+    report_schema_version: str
+    evidence_kind: str
+    date_from: date
+    date_to: date
+    status: str
+    recommendation: str
+    decision: str | None
+    report_data: dict[str, Any]
+    economics_scenarios: list[dict[str, Any]] = Field(default_factory=list)
+    backlog_priorities: list[dict[str, Any]] = Field(default_factory=list)
+    prepared_by: uuid.UUID
+    decided_by: uuid.UUID | None
+    decided_at: datetime | None
+    decision_rationale: str | None
+    created_at: datetime
 
 
 class PilotLogCreate(BaseModel):

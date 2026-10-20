@@ -12,7 +12,14 @@ from typing import Any, Literal
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models import Client, DelayCause, Invoice, Payment
+from app.models import (
+    Client,
+    Contract,
+    DelayCause,
+    Invoice,
+    Payment,
+    PilotAuthorizationEvent,
+)
 from app.services.pilot_metrics import build_pilot_metrics
 
 
@@ -25,7 +32,7 @@ DOCUMENTARY_CAUSES = {
     "missing_document",
     "document_error",
 }
-REPORT_SCHEMA_VERSION = "fase-8.1-v1"
+REPORT_SCHEMA_VERSION = "fase-8.2-v1"
 
 
 def _decimal(value: Decimal | int | float | str, places: str = "0.01") -> Decimal:
@@ -309,6 +316,7 @@ def _hypotheses(
 def evaluate_g4(
     *,
     evidence_kind: Literal["synthetic", "authorized_pilot"],
+    authorization_coverage_complete: bool,
     period_days: int,
     client_count: int,
     settled_invoices: int,
@@ -319,6 +327,11 @@ def evaluate_g4(
         {
             "key": "authorized_evidence",
             "passed": evidence_kind == "authorized_pilot",
+            "required": True,
+        },
+        {
+            "key": "authorization_coverage",
+            "passed": authorization_coverage_complete,
             "required": True,
         },
         {"key": "minimum_period", "passed": period_days >= 42, "required": True},
@@ -388,6 +401,124 @@ def evaluate_g4(
     }
 
 
+def build_economics_scenarios(
+    portfolio: dict[str, Any], assumptions: dict[str, Any]
+) -> list[dict[str, Any]]:
+    commission = Decimal(portfolio["commission_clp"])
+    total_cost = Decimal(portfolio["total_cost_clp"])
+    human_minutes = Decimal(portfolio["human_minutes"])
+    hourly_cost = Decimal(assumptions["human_hourly_cost_clp"])
+    observed_human_cost = human_minutes * hourly_cost / Decimal("60")
+    observed_technology_cost = max(total_cost - observed_human_cost, Decimal("0"))
+    managed = int(portfolio["managed_invoices"])
+    definitions = [
+        ("conservative", "Conservador", Decimal("0.85"), Decimal("1.25"), Decimal("1.20")),
+        ("observed", "Observado", Decimal("1"), Decimal("1"), Decimal("1")),
+        ("efficient", "Operación eficiente", Decimal("1"), Decimal("0.70"), Decimal("0.85")),
+    ]
+    rows = []
+    for key, label, commission_factor, human_factor, technology_factor in definitions:
+        scenario_commission = commission * commission_factor
+        scenario_human = observed_human_cost * human_factor
+        scenario_technology = observed_technology_cost * technology_factor
+        scenario_cost = scenario_human + scenario_technology
+        margin = scenario_commission - scenario_cost
+        rows.append(
+            {
+                "key": key,
+                "label": label,
+                "commission_factor": commission_factor,
+                "human_minutes_factor": human_factor,
+                "technology_cost_factor": technology_factor,
+                "commission_clp": _decimal(scenario_commission),
+                "human_cost_clp": _decimal(scenario_human),
+                "technology_cost_clp": _decimal(scenario_technology),
+                "total_cost_clp": _decimal(scenario_cost),
+                "margin_clp": _decimal(margin),
+                "margin_percent": (
+                    _decimal(margin * 100 / scenario_commission)
+                    if scenario_commission
+                    else None
+                ),
+                "cost_per_managed_invoice_clp": (
+                    _decimal(scenario_cost / managed) if managed else None
+                ),
+            }
+        )
+    return rows
+
+
+def prioritize_backlog(
+    hypotheses: list[dict[str, str]],
+    *,
+    payer_concentration_percent: Decimal | None,
+    g4_recommendation: str,
+) -> list[dict[str, Any]]:
+    states = {item["key"]: item["state"] for item in hypotheses}
+    candidates = []
+
+    def add(key: str, action: str, rationale: str, score: int) -> None:
+        candidates.append(
+            {"key": key, "action": action, "rationale": rationale, "score": score}
+        )
+
+    if states.get("positive_unit_economics") != "confirmed":
+        add(
+            "reduce_human_cost",
+            "Reducir minutos humanos en excepciones y conciliación.",
+            "La economía todavía no confirma margen positivo.",
+            100,
+        )
+    if states.get("outcome_improvement") != "confirmed":
+        add(
+            "strengthen_attribution",
+            "Mejorar comparables, línea base y atribución de pagos.",
+            "La mejora contra línea base no está confirmada en la mayoría de las pymes.",
+            95,
+        )
+    if states.get("documentary_relevance") == "confirmed":
+        add(
+            "deepen_payability",
+            "Priorizar automatización de OC, HES, aceptación y portales.",
+            "La evidencia confirma relevancia de bloqueos documentales.",
+            90,
+        )
+    elif states.get("documentary_relevance") == "rejected":
+        add(
+            "test_non_documentary_value",
+            "Probar una propuesta centrada en liquidez, disputas y compromisos.",
+            "La hipótesis documental fue rechazada.",
+            90,
+        )
+    if payer_concentration_percent is not None and payer_concentration_percent >= 60:
+        add(
+            "diversify_payers",
+            "Ampliar la muestra a pagadores y rubros menos concentrados.",
+            "El mayor pagador concentra 60% o más del monto observado.",
+            85,
+        )
+    if g4_recommendation == "scale":
+        add(
+            "production_hardening",
+            "Endurecer observabilidad, seguridad y operación para escalar.",
+            "La recomendación preliminar es escalar.",
+            80,
+        )
+    else:
+        add(
+            "bounded_experiment",
+            "Definir una iteración acotada con criterio de salida y nueva fecha G4.",
+            "La recomendación actual no habilita escala directa.",
+            75,
+        )
+    return [
+        {**item, "priority": index}
+        for index, item in enumerate(
+            sorted(candidates, key=lambda item: (-item["score"], item["key"])), start=1
+        )
+    ]
+
+
 def build_final_report(
     db: Session,
     *,
@@ -419,6 +550,11 @@ def build_final_report(
     analysis_comparisons = [
         _comparison(report, anonymized_alias("client", client.id))
         for client, report in zip(clients, reports, strict=True)
+    ]
+    participating_ids = [
+        client.id
+        for client, report in zip(clients, reports, strict=True)
+        if report["outcomes"]["managed_invoices"] > 0
     ]
     comparisons = [
         item
@@ -496,7 +632,8 @@ def build_final_report(
         )
     settled_invoices = sum(item["outcomes"]["settled_invoices"] for item in reports)
     portfolio = {
-        "client_count": len(clients),
+        "client_count": len(participating_ids),
+        "active_client_count": len(clients),
         "managed_invoices": sum(item["outcomes"]["managed_invoices"] for item in reports),
         "settled_invoices": settled_invoices,
         "average_dso": _weighted_metric(reports, "average_dso", "settled_invoices"),
@@ -518,13 +655,74 @@ def build_final_report(
     hypotheses = _hypotheses(
         analysis_comparisons, analysis_segments, Decimal(portfolio["margin_clp"])
     )
+    authorization_events = (
+        list(
+            db.scalars(
+                select(PilotAuthorizationEvent)
+                .where(PilotAuthorizationEvent.client_id.in_(participating_ids))
+                .order_by(
+                    PilotAuthorizationEvent.created_at,
+                    PilotAuthorizationEvent.id,
+                )
+            )
+        )
+        if participating_ids
+        else []
+    )
+    latest_authorization: dict[uuid.UUID, PilotAuthorizationEvent] = {}
+    for event in authorization_events:
+        latest_authorization[event.client_id] = event
+    active_contracts = (
+        {
+            item.client_id: item.id
+            for item in db.scalars(
+                select(Contract).where(
+                    Contract.client_id.in_(participating_ids),
+                    Contract.active.is_(True),
+                )
+            )
+        }
+        if participating_ids
+        else {}
+    )
+    authorized_ids = [
+        client_id
+        for client_id in participating_ids
+        if (authorization := latest_authorization.get(client_id)) is not None
+        and authorization.action == "approved"
+        and authorization.evidence_document_id is not None
+        and authorization.contract_id == active_contracts.get(client_id)
+        and authorization.valid_from <= date_from
+        and (authorization.valid_until is None or authorization.valid_until >= date_to)
+    ]
+    authorization_coverage = {
+        "participating_clients": len(participating_ids),
+        "authorized_clients": len(authorized_ids),
+        "complete": bool(participating_ids)
+        and len(authorized_ids) == len(participating_ids),
+    }
     g4 = evaluate_g4(
         evidence_kind=evidence_kind,
+        authorization_coverage_complete=authorization_coverage["complete"],
         period_days=(date_to - date_from).days + 1,
-        client_count=len(clients),
+        client_count=len(participating_ids),
         settled_invoices=settled_invoices,
         hypotheses=hypotheses,
         payer_concentration_percent=payer_concentration,
+    )
+    assumptions = {
+        "human_hourly_cost_clp": _decimal(human_hourly_cost_clp),
+        "usd_clp_rate": _decimal(usd_clp_rate),
+        "cohort": (
+            "Facturas emitidas en el período para segmentación; pagos "
+            "verificados para resultados."
+        ),
+    }
+    economics_scenarios = build_economics_scenarios(portfolio, assumptions)
+    backlog_priorities = prioritize_backlog(
+        hypotheses,
+        payer_concentration_percent=payer_concentration,
+        g4_recommendation=g4["recommendation"],
     )
     stable_payload = {
         "schema_version": REPORT_SCHEMA_VERSION,
@@ -537,6 +735,9 @@ def build_final_report(
         "segments": segments,
         "hypotheses": hypotheses,
         "g4": g4,
+        "authorization_coverage": authorization_coverage,
+        "economics_scenarios": economics_scenarios,
+        "backlog_priorities": backlog_priorities,
     }
     fingerprint = hashlib.sha256(
         json.dumps(stable_payload, sort_keys=True, default=str, separators=(",", ":")).encode()
@@ -551,14 +752,7 @@ def build_final_report(
             "minimum_group_size": minimum_group_size,
             "excluded_fields": ["names", "rut", "invoice_folio", "internal_ids", "contacts"],
         },
-        "assumptions": {
-            "human_hourly_cost_clp": _decimal(human_hourly_cost_clp),
-            "usd_clp_rate": _decimal(usd_clp_rate),
-            "cohort": (
-                "Facturas emitidas en el período para segmentación; pagos "
-                "verificados para resultados."
-            ),
-        },
+        "assumptions": assumptions,
         "fingerprint_sha256": fingerprint,
         "generated_at": datetime.now(timezone.utc),
     }
@@ -664,6 +858,21 @@ def final_report_markdown(report: dict[str, Any]) -> bytes:
     lines.extend(
         [
             "",
+            "## Sensibilidad de unit economics",
+            "",
+            "| Escenario | Comisión | Costo humano | Costo tecnológico | Margen | Margen % |",
+            "|---|---:|---:|---:|---:|---:|",
+        ]
+    )
+    for item in report["economics_scenarios"]:
+        lines.append(
+            f"| {item['label']} | {item['commission_clp']} | "
+            f"{item['human_cost_clp']} | {item['technology_cost_clp']} | "
+            f"{item['margin_clp']} | {item['margin_percent'] or '—'} |"
+        )
+    lines.extend(
+        [
+            "",
             "## Puerta G4",
             "",
             f"Recomendación: **{recommendation_labels[report['g4']['recommendation']]}**.",
@@ -676,6 +885,11 @@ def final_report_markdown(report: dict[str, Any]) -> bytes:
     )
     for check in report["g4"]["readiness_checks"]:
         lines.append(f"- {'Cumple' if check['passed'] else 'Pendiente'}: `{check['key']}`")
+    lines.extend(["", "## Backlog posterior priorizado", ""])
+    for item in report["backlog_priorities"]:
+        lines.append(
+            f"{item['priority']}. **{item['action']}** {item['rationale']}"
+        )
     lines.extend(
         [
             "",

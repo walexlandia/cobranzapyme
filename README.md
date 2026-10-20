@@ -141,6 +141,15 @@ El incremento 8.1 agrega el cierre medible del piloto:
 - clasificación explícita de hipótesis confirmadas, rechazadas e inciertas;
 - matriz G4 para escalar, iterar, pivotar o detener, bloqueada como pendiente para evidencia sintética.
 
+El incremento 8.2 formaliza la decisión:
+
+- escenarios conservador, observado y eficiente para revisar unit economics;
+- snapshots idempotentes e inmutables del informe anonimizado;
+- separación entre quien prepara el cierre y el administrador que decide;
+- bloqueo técnico de decisiones basadas en datos sintéticos o evidencia insuficiente;
+- eventos auditables por pyme y justificación obligatoria de la decisión;
+- backlog posterior priorizado automáticamente según las hipótesis y la concentración observada.
+
 ## Servicios
 
 - `db`: PostgreSQL 16.

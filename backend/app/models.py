@@ -328,6 +328,52 @@ class PilotLogEntry(BaseRecord, Base):
     resolution_note: Mapped[str | None] = mapped_column(Text)
 
 
+class PilotClosureSnapshot(BaseRecord, Base):
+    __tablename__ = "pilot_closure_snapshots"
+    __table_args__ = (
+        UniqueConstraint("report_fingerprint", name="uq_pilot_closure_report_fingerprint"),
+        CheckConstraint(
+            "evidence_kind IN ('synthetic', 'authorized_pilot')",
+            name="ck_pilot_closure_evidence_kind",
+        ),
+        CheckConstraint(
+            "status IN ('prepared', 'decided')",
+            name="ck_pilot_closure_status",
+        ),
+        CheckConstraint(
+            "decision IS NULL OR decision IN ('scale', 'iterate', 'pivot', 'stop')",
+            name="ck_pilot_closure_decision",
+        ),
+        CheckConstraint(
+            "(status = 'prepared' AND decision IS NULL AND decided_by IS NULL "
+            "AND decided_at IS NULL AND decision_rationale IS NULL) OR "
+            "(status = 'decided' AND decision IS NOT NULL AND decided_by IS NOT NULL "
+            "AND decided_by <> prepared_by AND decided_at IS NOT NULL "
+            "AND decision_rationale IS NOT NULL)",
+            name="ck_pilot_closure_decision_state",
+        ),
+        Index("ix_pilot_closure_status_created", "status", "created_at"),
+    )
+
+    report_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
+    report_schema_version: Mapped[str] = mapped_column(String(40), nullable=False)
+    evidence_kind: Mapped[str] = mapped_column(String(30), nullable=False)
+    date_from: Mapped[date] = mapped_column(Date, nullable=False)
+    date_to: Mapped[date] = mapped_column(Date, nullable=False)
+    status: Mapped[str] = mapped_column(String(20), default="prepared", nullable=False)
+    recommendation: Mapped[str] = mapped_column(String(20), nullable=False)
+    decision: Mapped[str | None] = mapped_column(String(20))
+    report_data: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
+    economics_scenarios: Mapped[list[dict[str, Any]]] = mapped_column(JSON, nullable=False)
+    backlog_priorities: Mapped[list[dict[str, Any]]] = mapped_column(JSON, nullable=False)
+    prepared_by: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id"), nullable=False, index=True
+    )
+    decided_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"), index=True)
+    decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    decision_rationale: Mapped[str | None] = mapped_column(Text)
+
+
 class MessageTemplate(BaseRecord, Base):
     __tablename__ = "message_templates"
     __table_args__ = (

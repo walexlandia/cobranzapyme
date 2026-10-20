@@ -1,12 +1,14 @@
 import json
+import uuid
 from datetime import date
 from decimal import Decimal
 
 from fastapi.testclient import TestClient
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.domain import Role
-from app.models import Payment
+from app.models import Contract, Document, Invoice, Payment, PilotAuthorizationEvent
 from tests.conftest import create_invoice, create_tenant_user
 
 
@@ -67,10 +69,12 @@ def test_final_report_is_anonymized_reproducible_and_cannot_approve_synthetic_g4
     assert response.status_code == 200
     payload = response.json()
     serialized = json.dumps(payload)
-    assert payload["schema_version"] == "fase-8.1-v1"
+    assert payload["schema_version"] == "fase-8.2-v1"
     assert payload["g4"]["ready"] is False
     assert payload["g4"]["recommendation"] == "pending"
     assert payload["fingerprint_sha256"]
+    assert len(payload["economics_scenarios"]) == 3
+    assert payload["backlog_priorities"]
     assert any(row["dimension"] == "payer" for row in payload["segments"])
     assert first.name not in serialized
     assert first.rut not in serialized
@@ -98,3 +102,187 @@ def test_final_report_is_anonymized_reproducible_and_cannot_approve_synthetic_g4
     assert client.get(
         f"/api/v1/metrics/final-report?{query}", headers=client_headers
     ).status_code == 403
+
+    snapshot = client.post(
+        "/api/v1/metrics/closures",
+        headers=admin_headers,
+        json={
+            "date_from": "2026-01-01",
+            "date_to": "2026-02-28",
+            "minimum_group_size": 1,
+            "evidence_kind": "synthetic",
+        },
+    )
+    assert snapshot.status_code == 201
+    assert snapshot.json()["status"] == "prepared"
+    blocked = client.post(
+        f'/api/v1/metrics/closures/{snapshot.json()["id"]}/decision',
+        headers=admin_headers,
+        json={
+            "decision": "iterate",
+            "rationale": "Datos sintéticos: esta decisión debe permanecer bloqueada.",
+        },
+    )
+    assert blocked.status_code == 409
+    assert client.post(
+        "/api/v1/metrics/closures",
+        headers=client_headers,
+        json={"date_from": "2026-01-01", "date_to": "2026-02-28"},
+    ).status_code == 403
+
+
+def test_authorized_closure_requires_independent_admin_and_is_immutable(
+    client: TestClient, db: Session
+) -> None:
+    first, _ = create_tenant_user(db, suffix="closure-authorized-a")
+    second, _ = create_tenant_user(db, suffix="closure-authorized-b")
+    _, preparer = create_tenant_user(
+        db, suffix="closure-preparer", role=Role.ADMIN
+    )
+    _, admin = create_tenant_user(db, suffix="closure-admin", role=Role.ADMIN)
+    first.baseline_dso = Decimal("50")
+    first.baseline_on_time_percent = Decimal("20")
+    second.baseline_dso = Decimal("50")
+    second.baseline_on_time_percent = Decimal("20")
+    payments = []
+    for index in range(10):
+        tenant = first if index < 5 else second
+        invoice = create_invoice(db, tenant, f"CLOSURE-{index:02d}")
+        payments.append(
+            Payment(
+                client_id=tenant.id,
+                invoice_id=invoice.id,
+                amount=Decimal("100000"),
+                paid_on=date(2026, 2, 5),
+                verified=True,
+                source="manual",
+                idempotency_key=f"closure-authorized-payment-{index}",
+            )
+        )
+    db.add_all(payments)
+    db.flush()
+    participant_ids = set(
+        db.scalars(
+            select(Invoice.client_id).where(
+                Invoice.issued_on >= date(2026, 1, 1),
+                Invoice.issued_on <= date(2026, 2, 28),
+            )
+        )
+    )
+    for index, client_id in enumerate(sorted(participant_ids, key=str)):
+        contract = db.scalar(
+            select(Contract).where(
+                Contract.client_id == client_id,
+                Contract.active.is_(True),
+            )
+        )
+        if contract is None:
+            next_version = int(
+                db.scalar(
+                    select(func.max(Contract.version)).where(
+                        Contract.client_id == client_id
+                    )
+                )
+                or 0
+            ) + 1
+            contract = Contract(
+                client_id=client_id,
+                version=next_version,
+                rules={},
+                active=True,
+            )
+            db.add(contract)
+            db.flush()
+        evidence = Document(
+            id=uuid.uuid4(),
+            client_id=client_id,
+            kind="pilot_authorization",
+            object_key=f"test/closure-authorization-{client_id}",
+            original_name="authorization.txt",
+            sha256=f"{index:064x}",
+        )
+        db.add(evidence)
+        db.flush()
+        db.add(
+            PilotAuthorizationEvent(
+                client_id=client_id,
+                contract_id=contract.id,
+                action="approved",
+                channels=["email"],
+                authorized_contact_name="Responsable de prueba",
+                authorized_contact_email=f"authorized-{index}@example.test",
+                valid_from=date(2026, 1, 1),
+                valid_until=date(2026, 2, 28),
+                evidence_document_id=evidence.id,
+                performed_by=preparer.id,
+                note="Autorización sintética para probar el flujo técnico.",
+                idempotency_key=f"closure-authorization-{client_id}",
+            )
+        )
+    db.commit()
+    preparer_headers = {"Authorization": f"Bearer {_token(client, preparer.email)}"}
+    admin_headers = {"Authorization": f"Bearer {_token(client, admin.email)}"}
+    body = {
+        "date_from": "2026-01-01",
+        "date_to": "2026-02-28",
+        "minimum_group_size": 2,
+        "evidence_kind": "authorized_pilot",
+    }
+
+    prepared = client.post(
+        "/api/v1/metrics/closures", headers=preparer_headers, json=body
+    )
+
+    assert prepared.status_code == 201
+    snapshot = prepared.json()
+    assert snapshot["report_data"]["g4"]["ready"] is True
+    assert snapshot["report_data"]["authorization_coverage"]["complete"] is True
+    assert snapshot["prepared_by"] == str(preparer.id)
+    assert client.post(
+        f'/api/v1/metrics/closures/{snapshot["id"]}/decision',
+        headers=preparer_headers,
+        json={
+            "decision": "iterate",
+            "rationale": "El operador no puede aprobar el cierre que preparó.",
+        },
+    ).status_code == 409
+    first.baseline_dso = Decimal("51")
+    db.commit()
+    stale = client.post(
+        f'/api/v1/metrics/closures/{snapshot["id"]}/decision',
+        headers=admin_headers,
+        json={
+            "decision": "iterate",
+            "rationale": "La evidencia cambió y exige preparar un snapshot actualizado.",
+        },
+    )
+    assert stale.status_code == 409
+    assert "evidencia cambió" in stale.json()["detail"]
+    refreshed = client.post(
+        "/api/v1/metrics/closures", headers=preparer_headers, json=body
+    )
+    assert refreshed.status_code == 201
+    refreshed_snapshot = refreshed.json()
+    assert refreshed_snapshot["report_fingerprint"] != snapshot["report_fingerprint"]
+    snapshot = refreshed_snapshot
+    decided = client.post(
+        f'/api/v1/metrics/closures/{snapshot["id"]}/decision',
+        headers=admin_headers,
+        json={
+            "decision": "iterate",
+            "rationale": "Se aprueba una iteración acotada con revisión en treinta días.",
+        },
+    )
+    assert decided.status_code == 200
+    assert decided.json()["status"] == "decided"
+    assert decided.json()["decision"] == "iterate"
+    assert decided.json()["report_fingerprint"] == snapshot["report_fingerprint"]
+    repeated = client.post(
+        f'/api/v1/metrics/closures/{snapshot["id"]}/decision',
+        headers=admin_headers,
+        json={
+            "decision": "scale",
+            "rationale": "No debe ser posible reemplazar una decisión ya registrada.",
+        },
+    )
+    assert repeated.status_code == 409

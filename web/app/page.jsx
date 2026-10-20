@@ -1018,17 +1018,26 @@ function MetricsPanel({ clientId, request, download }) {
   </section>;
 }
 
-function FinalReportPanel({ request, download }) {
+function FinalReportPanel({ request, download, user }) {
   const today = new Date().toISOString().slice(0, 10);
   const initialStart = new Date(); initialStart.setDate(initialStart.getDate() - 55);
   const [filters, setFilters] = useState({ date_from: initialStart.toISOString().slice(0, 10), date_to: today, human_hourly_cost_clp: "8000", usd_clp_rate: "950", minimum_group_size: "2", evidence_kind: "synthetic" });
   const [report, setReport] = useState(null);
+  const [closures, setClosures] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
+  const [decisionForms, setDecisionForms] = useState({});
   const params = useCallback(() => new URLSearchParams(filters).toString(), [filters]);
   const load = useCallback(async () => {
     setLoading(true); setMessage(null);
-    try { setReport(await request(`/api/v1/metrics/final-report?${params()}`)); }
+    try {
+      const [reportResult, closureRows] = await Promise.all([
+        request(`/api/v1/metrics/final-report?${params()}`),
+        request("/api/v1/metrics/closures"),
+      ]);
+      setReport(reportResult); setClosures(closureRows);
+    }
     catch (error) { setMessage({ type: "error", text: error.message }); }
     finally { setLoading(false); }
   }, [params, request]);
@@ -1044,6 +1053,27 @@ function FinalReportPanel({ request, download }) {
       setMessage({ type: "success", text: isDataset ? "Dataset agregado y anonimizado exportado." : "Informe V-10 reproducible exportado." });
     } catch (error) { setMessage({ type: "error", text: error.message }); }
   }
+  async function prepareClosure() {
+    setSaving(true); setMessage(null);
+    try {
+      const snapshot = await request("/api/v1/metrics/closures", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...filters, human_hourly_cost_clp: Number(filters.human_hourly_cost_clp), usd_clp_rate: Number(filters.usd_clp_rate), minimum_group_size: Number(filters.minimum_group_size) }) });
+      setClosures((current) => [snapshot, ...current.filter((item) => item.id !== snapshot.id)]);
+      setMessage({ type: "success", text: "Snapshot inmutable preparado para revisión independiente." });
+    } catch (error) { setMessage({ type: "error", text: error.message }); }
+    finally { setSaving(false); }
+  }
+  async function decideClosure(snapshot) {
+    const form = decisionForms[snapshot.id] || { decision: snapshot.recommendation === "pending" ? "iterate" : snapshot.recommendation, rationale: "" };
+    if (form.rationale.trim().length < 20) { setMessage({ type: "error", text: "La justificación G4 debe tener al menos 20 caracteres." }); return; }
+    setSaving(true); setMessage(null);
+    try {
+      const updated = await request(`/api/v1/metrics/closures/${snapshot.id}/decision`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
+      setClosures((current) => current.map((item) => item.id === updated.id ? updated : item));
+      setMessage({ type: "success", text: "Decisión G4 registrada con separación de funciones." });
+    } catch (error) { setMessage({ type: "error", text: error.message }); }
+    finally { setSaving(false); }
+  }
+  function decisionForm(snapshot) { return decisionForms[snapshot.id] || { decision: snapshot.recommendation === "pending" ? "iterate" : snapshot.recommendation, rationale: "" }; }
   const percentage = (value) => value == null ? "—" : `${Number(value).toLocaleString("es-CL", { maximumFractionDigits: 1 })}%`;
   const decimal = (value, suffix = "") => value == null ? "—" : `${Number(value).toLocaleString("es-CL", { maximumFractionDigits: 1 })}${suffix}`;
   const hypothesisLabels = { confirmed: "Confirmada", rejected: "Rechazada", uncertain: "Incierta" };
@@ -1054,16 +1084,19 @@ function FinalReportPanel({ request, download }) {
     <Message value={message} onClose={() => setMessage(null)} />
     <article className="metrics-hero final-report-hero"><div><p className="kicker">FASE 8.1 · V-10</p><h3>Cierre verificable del piloto</h3><p>Compara cada pyme con su línea base, anonimiza el dataset y aplica la matriz G4 sin convertir una demostración sintética en evidencia real.</p></div><div className="metrics-filters final-report-filters"><label>Desde<input type="date" name="date_from" value={filters.date_from} onChange={change} /></label><label>Hasta<input type="date" name="date_to" value={filters.date_to} onChange={change} /></label><label>Costo humano CLP/h<input type="number" min="0" name="human_hourly_cost_clp" value={filters.human_hourly_cost_clp} onChange={change} /></label><label>CLP por USD<input type="number" min="1" name="usd_clp_rate" value={filters.usd_clp_rate} onChange={change} /></label><label>Mínimo por grupo<input type="number" min="1" max="50" name="minimum_group_size" value={filters.minimum_group_size} onChange={change} /></label><label>Tipo de evidencia<select name="evidence_kind" value={filters.evidence_kind} onChange={change}><option value="synthetic">Sintética / demo</option><option value="authorized_pilot">Piloto autorizado</option></select></label><button type="button" className="secondary" onClick={load} disabled={loading}>{loading ? "Calculando…" : "Recalcular"}</button></div></article>
     {report && <>
-      <article className={`evidence-banner ${report.g4.ready ? "ready" : "pending"}`}><div><p className="kicker">PUERTA G4</p><h3>{recommendationLabels[report.g4.recommendation]}</h3><p>{report.g4.reason}</p></div><div><span>{report.evidence_kind === "synthetic" ? "Evidencia sintética" : "Piloto autorizado"}</span><b>{report.period_days} días · {report.portfolio.client_count} pymes</b><small>Huella {report.fingerprint_sha256.slice(0, 16)}…</small></div></article>
+      <article className={`evidence-banner ${report.g4.ready ? "ready" : "pending"}`}><div><p className="kicker">PUERTA G4</p><h3>{recommendationLabels[report.g4.recommendation]}</h3><p>{report.g4.reason}</p></div><div><span>{report.evidence_kind === "synthetic" ? "Evidencia sintética" : "Piloto autorizado"}</span><b>{report.period_days} días · {report.portfolio.client_count} pymes</b><small>Autorizaciones {report.authorization_coverage.authorized_clients}/{report.authorization_coverage.participating_clients} · huella {report.fingerprint_sha256.slice(0, 16)}…</small></div></article>
       <section className="stats-grid"><Stat label="Pymes analizadas" value={report.portfolio.client_count} note="seudónimos estables" /><Stat label="Facturas gestionadas" value={report.portfolio.managed_invoices} note={`${report.portfolio.settled_invoices} saldadas`} /><Stat label="Pago oportuno" value={percentage(report.portfolio.on_time_percent)} note="ponderado por saldadas" /><Stat label="DSO agregado" value={decimal(report.portfolio.average_dso, " días")} note="ponderado por saldadas" /><Stat label="Monto verificado" value={money.format(Number(report.portfolio.verified_amount_clp))} note="solo pagos verificados" /><Stat label="Minutos humanos" value={decimal(report.portfolio.human_minutes)} note="operación + excepciones" /><Stat label="Costo total" value={money.format(Number(report.portfolio.total_cost_clp))} note="tecnología + personas" /><Stat label="Margen estimado" value={money.format(Number(report.portfolio.margin_clp))} note="supuestos reproducibles" /></section>
-      <section className="report-actions"><div><b>Artefactos de cierre</b><span>El CSV excluye nombres, RUT, folios, contactos e IDs internos; grupos menores a {report.minimum_group_size} se suprimen.</span></div><button type="button" className="secondary" onClick={() => exportArtifact("dataset")}>Descargar dataset CSV</button><button type="button" className="primary" onClick={() => exportArtifact("report")}>Descargar informe V-10</button></section>
+      <section className="report-actions"><div><b>Artefactos de cierre</b><span>El CSV excluye nombres, RUT, folios, contactos e IDs internos; grupos menores a {report.minimum_group_size} se suprimen.</span></div><button type="button" className="secondary" onClick={() => exportArtifact("dataset")}>Descargar dataset CSV</button><button type="button" className="secondary" onClick={() => exportArtifact("report")}>Descargar informe V-10</button><button type="button" className="primary" disabled={saving} onClick={prepareClosure}>Preparar snapshot</button></section>
       <section className="metrics-grid final-report-grid">
         <article className="metric-card wide-card"><div className="card-heading"><div><p className="kicker">COMPARACIÓN POR CLIENTE</p><h3>Línea base frente al piloto</h3></div><span className="read-only">Identidades anonimizadas</span></div><div className="table-wrap"><table><thead><tr><th>Pyme</th><th>DSO base</th><th>DSO actual</th><th>Δ días</th><th>Pago base</th><th>Pago actual</th><th>Δ puntos</th><th>Margen</th><th>Lectura</th></tr></thead><tbody>{report.client_comparisons.map((item) => <tr key={item.client_alias}><td><b>{item.client_alias}</b><small>{item.managed_invoices} gestionadas</small></td><td>{decimal(item.baseline_dso, " d")}</td><td>{decimal(item.current_dso, " d")}</td><td>{decimal(item.dso_delta_days, " d")}</td><td>{percentage(item.baseline_on_time_percent)}</td><td>{percentage(item.current_on_time_percent)}</td><td>{decimal(item.on_time_delta_points, " pp")}</td><td className="number">{money.format(Number(item.margin_clp))}</td><td><span className={`status-pill ${item.result}`}>{resultLabels[item.result]}</span></td></tr>)}</tbody></table></div></article>
         <article className="metric-card"><div className="card-heading"><div><p className="kicker">HIPÓTESIS</p><h3>Confirmadas, rechazadas e inciertas</h3></div></div><div className="hypothesis-list">{report.hypotheses.map((item) => <div key={item.key} className={item.state}><span>{hypothesisLabels[item.state]}</span><b>{item.statement}</b><small>{item.evidence}</small></div>)}</div></article>
         <article className="metric-card"><div className="card-heading"><div><p className="kicker">DECISIÓN</p><h3>Matriz G4</h3></div></div><div className="g4-matrix">{report.g4.matrix.map((item) => <div key={item.option} className={item.status}><span>{item.status === "recommended" ? "Recomendado" : item.status === "pending" ? "Pendiente" : "No recomendado"}</span><b>{item.label}</b></div>)}</div><div className="g4-checks">{report.g4.readiness_checks.map((item) => <span key={item.key} className={item.passed ? "passed" : "pending"}>{item.passed ? "✓" : "—"} {item.key.replaceAll("_", " ")}</span>)}</div></article>
+        <article className="metric-card wide-card"><div className="card-heading"><div><p className="kicker">UNIT ECONOMICS</p><h3>Sensibilidad de margen</h3></div><span className="read-only">Supuestos explícitos</span></div><div className="table-wrap"><table><thead><tr><th>Escenario</th><th>Comisión</th><th>Costo humano</th><th>Tecnología</th><th>Costo / factura</th><th>Margen</th><th>Margen %</th></tr></thead><tbody>{report.economics_scenarios.map((item) => <tr key={item.key}><td><b>{item.label}</b><small>humano ×{item.human_minutes_factor} · tech ×{item.technology_cost_factor}</small></td><td className="number">{money.format(Number(item.commission_clp))}</td><td className="number">{money.format(Number(item.human_cost_clp))}</td><td className="number">{money.format(Number(item.technology_cost_clp))}</td><td className="number">{item.cost_per_managed_invoice_clp == null ? "—" : money.format(Number(item.cost_per_managed_invoice_clp))}</td><td className="number">{money.format(Number(item.margin_clp))}</td><td>{percentage(item.margin_percent)}</td></tr>)}</tbody></table></div></article>
+        <article className="metric-card"><div className="card-heading"><div><p className="kicker">SIGUIENTE VERSIÓN</p><h3>Backlog por evidencia</h3></div></div><div className="backlog-priority-list">{report.backlog_priorities.map((item) => <div key={item.key}><i>{item.priority}</i><span><b>{item.action}</b><small>{item.rationale}</small></span></div>)}</div></article>
         {[["payer", "Pagador"], ["cause", "Causa"], ["amount_band", "Tramo de monto"]].map(([dimension, label]) => <article className="metric-card" key={dimension}><div className="card-heading"><div><p className="kicker">ANÁLISIS AGREGADO</p><h3>Por {label.toLowerCase()}</h3></div></div><div className="rank-list">{report.segments.filter((item) => item.dimension === dimension).map((item) => <div key={item.segment}><span>{item.segment.replaceAll("_", " ")}</span><b>{item.invoice_count}</b><small>{money.format(Number(item.nominal_amount_clp))} · {percentage(item.on_time_percent)} oportuno</small></div>)}{!report.segments.some((item) => item.dimension === dimension) && <p className="empty">Sin grupos que superen el umbral de privacidad.</p>}</div></article>)}
         <article className="metric-card"><div className="card-heading"><div><p className="kicker">PRIVACIDAD</p><h3>Control del dataset</h3></div></div><dl className="metric-definition"><div><dt>Método</dt><dd>{report.privacy.method}</dd></div><div><dt>Umbral k</dt><dd>{report.privacy.minimum_group_size}</dd></div><div><dt>Concentración mayor pagador</dt><dd>{percentage(report.payer_concentration_percent)}</dd></div><div><dt>Grupos suprimidos</dt><dd>{report.suppressed_groups.reduce((total, item) => total + item.groups, 0)}</dd></div></dl><p className="metric-note">Cohorte: {report.assumptions.cohort}</p></article>
       </section>
+      <article className="closure-history"><div className="card-heading"><div><p className="kicker">CONTROL DE CAMBIOS</p><h3>Snapshots y decisiones G4</h3></div><span className="read-only">Preparación y aprobación separadas</span></div><div className="closure-list">{closures.map((snapshot) => { const form = decisionForm(snapshot); const canDecide = user.role === "admin" && snapshot.status === "prepared" && snapshot.report_data?.g4?.ready && snapshot.prepared_by !== user.id; return <article key={snapshot.id}><div className="closure-meta"><span className={`status-pill ${snapshot.status}`}>{snapshot.status === "decided" ? "Decidido" : "Preparado"}</span><b>{snapshot.date_from} al {snapshot.date_to}</b><small>{snapshot.evidence_kind} · {snapshot.report_fingerprint.slice(0, 16)}…</small></div><div><span>Recomendación</span><b>{recommendationLabels[snapshot.recommendation]}</b>{snapshot.decision && <small>Decisión: {recommendationLabels[snapshot.decision]} · {snapshot.decision_rationale}</small>}</div>{canDecide ? <div className="closure-decision"><select value={form.decision} onChange={(event) => setDecisionForms((current) => ({ ...current, [snapshot.id]: { ...form, decision: event.target.value } }))}><option value="scale">Escalar</option><option value="iterate">Iterar</option><option value="pivot">Pivotar</option><option value="stop">Detener</option></select><textarea placeholder="Justificación de la decisión (mínimo 20 caracteres)" value={form.rationale} onChange={(event) => setDecisionForms((current) => ({ ...current, [snapshot.id]: { ...form, rationale: event.target.value } }))} /><button type="button" className="primary" disabled={saving} onClick={() => decideClosure(snapshot)}>Registrar decisión</button></div> : <p className="closure-note">{snapshot.status === "decided" ? "Snapshot cerrado e inmutable." : !snapshot.report_data?.g4?.ready ? "La evidencia no habilita una decisión G4." : snapshot.prepared_by === user.id ? "Debe decidir otro administrador." : "Solo un administrador puede decidir."}</p>}</article>; })}{!closures.length && <p className="empty">Aún no hay snapshots preparados.</p>}</div></article>
     </>}
   </section>;
 }
@@ -1721,7 +1754,7 @@ export default function Home() {
         ) : activeView === "pilot_operations" ? (
           <PilotOperationsPanel clientId={selectedClientId} invoices={invoices} request={request} onOpenView={setActiveView} />
         ) : activeView === "final_report" ? (
-          <FinalReportPanel request={request} download={download} />
+          <FinalReportPanel request={request} download={download} user={user} />
         ) : (
           <AccessLogsPanel request={request} />
         )}
