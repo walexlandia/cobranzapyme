@@ -1,7 +1,10 @@
+import hashlib
+import io
 import json
 import uuid
 from datetime import date
 from decimal import Decimal
+from zipfile import ZipFile
 
 from fastapi.testclient import TestClient
 from sqlalchemy import func, select
@@ -115,6 +118,47 @@ def test_final_report_is_anonymized_reproducible_and_cannot_approve_synthetic_g4
     )
     assert snapshot.status_code == 201
     assert snapshot.json()["status"] == "prepared"
+    package_url = f'/api/v1/metrics/closures/{snapshot.json()["id"]}/package.zip'
+    package = client.get(package_url, headers=admin_headers)
+    repeated_package = client.get(package_url, headers=admin_headers)
+    assert package.status_code == 200
+    assert package.headers["content-type"] == "application/zip"
+    assert package.content == repeated_package.content
+    assert package.headers["x-package-sha256"] == hashlib.sha256(
+        package.content
+    ).hexdigest()
+    with ZipFile(io.BytesIO(package.content)) as archive:
+        names = set(archive.namelist())
+        assert names == {
+            "resumen-ejecutivo.md",
+            "informe-final-v10.md",
+            "dataset-anonimizado.csv",
+            "unit-economics.csv",
+            "backlog-priorizado.csv",
+            "anexo-evidencia.md",
+            "manifest.json",
+        }
+        manifest = json.loads(archive.read("manifest.json"))
+        assert manifest["draft"] is True
+        assert manifest["report_fingerprint_sha256"] == snapshot.json()[
+            "report_fingerprint"
+        ]
+        for entry in manifest["files"]:
+            content = archive.read(entry["path"])
+            assert entry["size_bytes"] == len(content)
+            assert entry["sha256"] == hashlib.sha256(content).hexdigest()
+        exported_text = "\n".join(
+            archive.read(name).decode("utf-8-sig")
+            for name in names
+            if name.endswith((".md", ".csv"))
+        )
+    assert "BORRADOR — EVIDENCIA SINTÉTICA" in exported_text
+    assert first.name not in exported_text
+    assert first.rut not in exported_text
+    assert first_payer_name not in exported_text
+    assert "PRIVATE-FOLIO-A" not in exported_text
+    assert str(first.id) not in exported_text
+    assert client.get(package_url, headers=client_headers).status_code == 403
     blocked = client.post(
         f'/api/v1/metrics/closures/{snapshot.json()["id"]}/decision',
         headers=admin_headers,
@@ -277,6 +321,21 @@ def test_authorized_closure_requires_independent_admin_and_is_immutable(
     assert decided.json()["status"] == "decided"
     assert decided.json()["decision"] == "iterate"
     assert decided.json()["report_fingerprint"] == snapshot["report_fingerprint"]
+    decided_package = client.get(
+        f'/api/v1/metrics/closures/{snapshot["id"]}/package.zip',
+        headers=admin_headers,
+    )
+    assert decided_package.status_code == 200
+    with ZipFile(io.BytesIO(decided_package.content)) as archive:
+        decided_manifest = json.loads(archive.read("manifest.json"))
+        assert decided_manifest["draft"] is False
+        assert decided_manifest["closure_status"] == "decided"
+        assert decided_manifest["decision"] == "iterate"
+        assert "Se aprueba una iteración acotada" not in "\n".join(
+            archive.read(name).decode("utf-8-sig")
+            for name in archive.namelist()
+            if name.endswith((".md", ".csv", ".json"))
+        )
     repeated = client.post(
         f'/api/v1/metrics/closures/{snapshot["id"]}/decision',
         headers=admin_headers,

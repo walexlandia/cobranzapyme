@@ -1,8 +1,10 @@
 """Checks that run without network access or a PostgreSQL driver."""
 
 import ast
+import hashlib
 import importlib.util
 import io
+import json
 import os
 import sys
 import types
@@ -11,6 +13,7 @@ from datetime import date, datetime, timezone
 from decimal import Decimal
 from pathlib import Path
 from zoneinfo import ZoneInfo
+from zipfile import ZipFile
 
 from openpyxl import Workbook
 from pydantic import BaseModel, ValidationError
@@ -50,6 +53,7 @@ from app.services.invoice_import import (  # noqa: E402
     parse_invoice_file,
     parse_sii_status_file,
 )
+from app.services.investor_package import build_investor_package  # noqa: E402
 from app.services.final_report import (  # noqa: E402
     amount_band,
     anonymized_alias,
@@ -694,6 +698,7 @@ def check_phase8_final_report_assets() -> None:
         ROOT / "backend" / "migrations" / "versions" / "0015_pilot_closure.py"
     ).read_text(encoding="utf-8")
     assert "anonymized-dataset.csv" in router and "final-report.md" in router
+    assert "closures/{closure_id}/package.zip" in router
     assert "pilot.closure_prepared" in router and "pilot.g4_decided" in router
     assert "HMAC-SHA256 aliases" in service and "minimum_group_size" in service
     assert "FinalReportPanel" in interface and "Matriz G4" in interface
@@ -756,11 +761,115 @@ def check_phase8_final_report_assets() -> None:
     )
     assert any(item["key"] == "diversify_payers" for item in backlog)
     assert [item["priority"] for item in backlog] == list(range(1, len(backlog) + 1))
+    package_report = {
+        "schema_version": "fase-8.2-v1",
+        "date_from": "2026-01-01",
+        "date_to": "2026-02-28",
+        "period_days": 59,
+        "evidence_kind": "synthetic",
+        "fingerprint_sha256": "a" * 64,
+        "portfolio": {
+            "client_count": 2,
+            "managed_invoices": 10,
+            "settled_invoices": 8,
+            "verified_amount_clp": "800000.00",
+            "average_dso": "32.00",
+            "on_time_percent": "75.00",
+            "human_minutes": "120.00",
+            "margin_clp": "20000.00",
+        },
+        "client_comparisons": [],
+        "segments": [
+            {
+                "dimension": "amount_band",
+                "segment": "menos_de_500k",
+                "invoice_count": 10,
+                "nominal_amount_clp": "1000000.00",
+                "verified_amount_clp": "800000.00",
+                "settled_invoices": 8,
+                "on_time_percent": "75.00",
+                "average_settlement_days": "32.00",
+            }
+        ],
+        "hypotheses": [
+            {
+                "key": "outcome_improvement",
+                "state": "confirmed",
+                "statement": "La operación mejora el resultado.",
+                "evidence": "Muestra sintética.",
+            }
+        ],
+        "economics_scenarios": [
+            {
+                "key": "observed",
+                "label": "Observado",
+                "commission_clp": "100000.00",
+                "human_cost_clp": "60000.00",
+                "technology_cost_clp": "20000.00",
+                "total_cost_clp": "80000.00",
+                "cost_per_managed_invoice_clp": "8000.00",
+                "margin_clp": "20000.00",
+                "margin_percent": "20.00",
+                "human_minutes_factor": "1.00",
+                "technology_cost_factor": "1.00",
+            }
+        ],
+        "backlog_priorities": [
+            {
+                "priority": 1,
+                "key": "validate_real_pilot",
+                "action": "Validar piloto real",
+                "rationale": "La evidencia actual es sintética.",
+            }
+        ],
+        "g4": {
+            "ready": False,
+            "recommendation": "pending",
+            "reason": "La evidencia sintética no habilita G4.",
+            "readiness_checks": [{"key": "authorized_evidence", "passed": False}],
+        },
+        "privacy": {
+            "method": "HMAC-SHA256 aliases + aggregated dimensions",
+            "minimum_group_size": 2,
+        },
+        "suppressed_groups": [{"dimension": "payer", "groups": 1}],
+        "authorization_coverage": {
+            "participating_clients": 2,
+            "authorized_clients": 0,
+            "complete": False,
+        },
+    }
+    package, manifest = build_investor_package(
+        package_report, closure_status="prepared", decision=None
+    )
+    repeated_package, _ = build_investor_package(
+        package_report, closure_status="prepared", decision=None
+    )
+    assert package == repeated_package and manifest["draft"] is True
+    with ZipFile(io.BytesIO(package)) as archive:
+        assert set(archive.namelist()) == {
+            "resumen-ejecutivo.md",
+            "informe-final-v10.md",
+            "dataset-anonimizado.csv",
+            "unit-economics.csv",
+            "backlog-priorizado.csv",
+            "anexo-evidencia.md",
+            "manifest.json",
+        }
+        stored_manifest = json.loads(archive.read("manifest.json"))
+        for entry in stored_manifest["files"]:
+            assert hashlib.sha256(archive.read(entry["path"])).hexdigest() == entry[
+                "sha256"
+            ]
+        assert "BORRADOR — EVIDENCIA SINTÉTICA" in archive.read(
+            "resumen-ejecutivo.md"
+        ).decode("utf-8-sig")
     for name in (
         "estado.md",
         "metodologia-informe.md",
         "matriz-g4.md",
         "backlog-posterior.md",
+        "paquete-postulacion.md",
     ):
         assert (ROOT / "docs" / "fase-8" / name).is_file()
 

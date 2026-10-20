@@ -1,4 +1,5 @@
 import csv
+import hashlib
 import io
 import json
 import uuid
@@ -28,6 +29,7 @@ from app.services.final_report import (
     build_final_report,
     final_report_markdown,
 )
+from app.services.investor_package import build_investor_package
 from app.services.pilot_metrics import build_pilot_metrics
 
 
@@ -329,6 +331,35 @@ def list_pilot_closures(
             )
             .limit(100)
         )
+    )
+
+
+@router.get("/closures/{closure_id}/package.zip")
+def download_pilot_closure_package(
+    closure_id: uuid.UUID,
+    _: Operator,
+    db: Annotated[Session, Depends(get_db)],
+) -> Response:
+    snapshot = db.get(PilotClosureSnapshot, closure_id)
+    if snapshot is None:
+        raise HTTPException(status_code=404, detail="Cierre de piloto no encontrado")
+    content, _manifest = build_investor_package(
+        snapshot.report_data,
+        closure_status=snapshot.status,
+        decision=snapshot.decision,
+    )
+    package_hash = hashlib.sha256(content).hexdigest()
+    return Response(
+        content=content,
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": (
+                'attachment; filename="paquete-postulacion-'
+                f'{snapshot.report_fingerprint[:16]}-{snapshot.status}.zip"'
+            ),
+            "X-Report-Fingerprint": snapshot.report_fingerprint,
+            "X-Package-SHA256": package_hash,
+        },
     )
 
 

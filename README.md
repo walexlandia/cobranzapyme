@@ -150,6 +150,14 @@ El incremento 8.2 formaliza la decisión:
 - eventos auditables por pyme y justificación obligatoria de la decisión;
 - backlog posterior priorizado automáticamente según las hipótesis y la concentración observada.
 
+El incremento 8.3 prepara la entrega verificable:
+
+- paquete ZIP determinista generado exclusivamente desde un snapshot inmutable;
+- resumen ejecutivo y anexos separados de informe, dataset, unit economics, backlog y evidencia;
+- manifiesto con huellas SHA-256 y tamaños para verificar cada archivo;
+- marca visible de borrador cuando la evidencia es sintética;
+- exclusión de datos identificatorios, UUID internos y texto libre de decisiones.
+
 ## Servicios
 
 - `db`: PostgreSQL 16.
@@ -210,5 +218,6 @@ Los CSV listos para importar están en `data/demo/imports`. Incluyen tres pymes 
 - `docs/fase-5/estado.md`: clasificación supervisada, evaluación y puerta de automatización.
 - `docs/fase-6/estado.md`: pagos manuales, cartolas y conciliación supervisada.
 - `docs/fase-7/estado.md`: cierre local de vista cliente, documentos, métricas y operación demostrable del piloto asistido.
+- `docs/fase-8/estado.md`: informe final, decisión formal G4 y paquete verificable de postulación.
 - `examples/`: archivos de facturas y contactos para probar las importaciones.
 

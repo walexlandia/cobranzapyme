@@ -30,6 +30,19 @@
 
 La migración `0015` agrega `pilot_closure_snapshots`. El snapshot conserva exclusivamente el informe agregado y anonimizado, los escenarios económicos y el backlog priorizado; no almacena nombres, RUT, folios, contactos ni UUID de clientes o pagadores.
 
+## Incremento 8.3 — Paquete de postulación e inversionistas
+
+| Entregable | Estado local | Evidencia |
+|---|---|---|
+| Resumen ejecutivo | Completo localmente | Propuesta, alcance, resultados, economía y cierre derivados del snapshot |
+| Anexos separados | Completo localmente | Informe V-10, dataset anonimizado, unit economics, backlog y anexo de evidencia |
+| ZIP consolidado | Completo localmente | Orden y metadatos internos fijos para producir bytes deterministas |
+| Manifiesto verificable | Completo localmente | Versión, huella del informe y SHA-256/tamaño por archivo |
+| Control de privacidad | Completo | Excluye datos identificatorios, UUID y justificación libre de la decisión |
+| Rotulado sintético | Completo | Resumen y manifiesto marcan inequívocamente el paquete como borrador |
+
+Guía de uso y verificación: `docs/fase-8/paquete-postulacion.md`.
+
 Documento de continuidad: `docs/fase-8/backlog-posterior.md`.
 
 ## Límites deliberados
@@ -49,8 +62,8 @@ La funcionalidad permite cerrar el informe, pero los datos sintéticos no valida
 ## Validación local
 
 - Compilación Python aprobada para aplicación, pruebas y scripts.
-- 27 comprobaciones offline aprobadas, incluidas migración `0015`, escenarios económicos, backlog y contratos de cierre G4.
-- Build de producción Next.js aprobado usando la imagen local `recupera-web:phase7-4` y los archivos de Fase 8.2 montados sin red.
+- 27 comprobaciones offline aprobadas, incluidas migración `0015`, escenarios económicos, backlog, contratos de cierre G4 y contenido determinista del paquete de postulación.
+- Build de producción Next.js aprobado usando la imagen local `recupera-web:phase7-4` y los archivos de Fase 8.3 montados sin red.
 - Esquema completo de 37 tablas creado en PostgreSQL 16 dentro de una base desechable.
 - Trigger de cierre probado en PostgreSQL: bloquea cambios de evidencia, segunda decisión y borrado; permite únicamente la primera transición válida a `decided`.
 - Prueba HTTP/PostgreSQL preparada en `backend/tests/test_final_report.py` para privacidad, exportaciones, snapshot idempotente, evidencia obsoleta, bloqueo sintético, separación de funciones e inmutabilidad.
