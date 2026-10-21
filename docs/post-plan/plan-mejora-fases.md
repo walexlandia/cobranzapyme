@@ -11,8 +11,8 @@ La nomenclatura `PM` significa **Plan de Mejora** y evita confundir estas fases 
 | Fase | Propósito | Estado actual | Fuente principal |
 |---|---|---|---|
 | PM-0 | Base segura, observable y medible | Completa localmente | E12, métricas del piloto y bloques 9.1–9.3 |
-| PM-1 | Diagnosticar el costo humano | Siguiente fase | Prioridad 1 del backlog posterior |
-| PM-2 | Optimizar un flujo humano comprobado | Pendiente de PM-1 | E7, E8 y prioridad 1 |
+| PM-1 | Diagnosticar el costo humano | Instrumentada localmente; gate provisional | Prioridad 1 del backlog posterior |
+| PM-2 | Optimizar un flujo humano comprobado | Bloqueada por PM-G1 | E7, E8 y prioridad 1 |
 | PM-3 | Fortalecer comparables y atribución | Pendiente de PM-2 | E9, E11 y prioridad 2 |
 | PM-4 | Automatizar un bloqueo documental probado | Bloqueada por evidencia real | Épica P y prioridad 3 |
 | PM-5 | Ejecutar una iteración real acotada | Bloqueada externamente | Prioridades 4–5 y puerta G4 |
@@ -65,6 +65,8 @@ Si falta cualquiera de estos elementos, la tarea permanece como hipótesis y no 
 **No autorizado en esta fase:** acciones masivas, nuevas automatizaciones o cambios al flujo operativo.
 
 **Puerta PM-G1:** existe una línea base reproducible y un solo problema seleccionado que explica una parte material del costo humano. Si los datos no distinguen un cuello de botella, se mejora la medición y no se desarrolla una funcionalidad.
+
+**Estado local al 2026-10-21:** el instrumento reproducible quedó implementado y ejecutado sobre el seed. La muestra sintética registra 84 minutos: `pilot_log:manual_work` concentra 54 minutos (64,29%), seguido por incidentes con 18 y decisiones con 12. La oportunidad es provisional y su objetivo condicionado sería reducir al menos 20%, de 54 a no más de 43,2 minutos en una muestra comparable. La puerta permanece en `provisional_synthetic`: no autoriza PM-2. La migración `0017` incorpora minutos obligatorios en nuevas decisiones de conciliación para cerrar una brecha encontrada durante el diagnóstico; el tiempo de ciclo continúa separado del esfuerzo humano.
 
 ## PM-2 — Optimización del flujo seleccionado
 
@@ -130,4 +132,4 @@ Esta fase solo existe si PM-G5 termina en `scale`. Recién entonces se priorizan
 
 ## Próximo trabajo autorizado
 
-El siguiente bloque es **PM-1 — Diagnóstico del costo humano**. Sus tareas son exclusivamente de medición, segmentación y selección del cuello de botella. PM-2 no puede comenzar hasta aprobar PM-G1.
+El siguiente bloque continúa siendo **PM-1 — Diagnóstico del costo humano**. El instrumento y la evidencia sintética ya están completos; faltan evidencia autorizada, cobertura de conciliaciones nuevas, distinción entre cero y dato omitido, control de solapamiento con la bitácora e historial de reaperturas. PM-2 no puede comenzar hasta aprobar PM-G1.

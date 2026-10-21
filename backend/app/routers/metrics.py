@@ -18,6 +18,7 @@ from app.models import Client, Event, Invoice, PilotClosureSnapshot, User
 from app.schemas import (
     ClientTrendView,
     FinalPilotReportView,
+    HumanEffortDiagnosticView,
     PilotClosureCreate,
     PilotClosureDecision,
     PilotClosureSnapshotView,
@@ -29,9 +30,13 @@ from app.services.final_report import (
     build_final_report,
     final_report_markdown,
 )
+from app.services.human_effort import (
+    build_human_effort_diagnostic,
+    human_effort_dataset_csv,
+    human_effort_markdown,
+)
 from app.services.investor_package import build_investor_package
 from app.services.pilot_metrics import build_pilot_metrics
-
 
 router = APIRouter(prefix="/api/v1/metrics", tags=["pilot-metrics"])
 Operator = Annotated[User, Depends(require_roles(Role.ADMIN, Role.OPERATOR))]
@@ -120,6 +125,26 @@ def _final_report(
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
+def _human_effort_report(
+    db: Session,
+    *,
+    date_from: date | None,
+    date_to: date | None,
+    evidence_kind: Literal["synthetic", "authorized_pilot"],
+) -> dict:
+    end = date_to or date.today()
+    start = date_from or (end - timedelta(days=83))
+    try:
+        return build_human_effort_diagnostic(
+            db,
+            date_from=start,
+            date_to=end,
+            evidence_kind=evidence_kind,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
 @router.get("/pilot", response_model=PilotMetricsView)
 def pilot_metrics(
     _: Operator,
@@ -137,6 +162,78 @@ def pilot_metrics(
         date_to=date_to,
         human_hourly_cost_clp=human_hourly_cost_clp,
         usd_clp_rate=usd_clp_rate,
+    )
+
+
+@router.get("/human-effort", response_model=HumanEffortDiagnosticView)
+def human_effort_diagnostic(
+    _: Admin,
+    db: Annotated[Session, Depends(get_db)],
+    date_from: Annotated[date | None, Query()] = None,
+    date_to: Annotated[date | None, Query()] = None,
+    evidence_kind: Annotated[
+        Literal["synthetic", "authorized_pilot"], Query()
+    ] = "synthetic",
+) -> dict:
+    return _human_effort_report(
+        db,
+        date_from=date_from,
+        date_to=date_to,
+        evidence_kind=evidence_kind,
+    )
+
+
+@router.get("/human-effort.csv")
+def human_effort_diagnostic_csv(
+    _: Admin,
+    db: Annotated[Session, Depends(get_db)],
+    date_from: Annotated[date | None, Query()] = None,
+    date_to: Annotated[date | None, Query()] = None,
+    evidence_kind: Annotated[
+        Literal["synthetic", "authorized_pilot"], Query()
+    ] = "synthetic",
+) -> Response:
+    report = _human_effort_report(
+        db,
+        date_from=date_from,
+        date_to=date_to,
+        evidence_kind=evidence_kind,
+    )
+    return Response(
+        content=human_effort_dataset_csv(report),
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": (
+                f'attachment; filename="pm-1-fricciones-{report["date_to"]}.csv"'
+            )
+        },
+    )
+
+
+@router.get("/human-effort.md")
+def human_effort_diagnostic_markdown(
+    _: Admin,
+    db: Annotated[Session, Depends(get_db)],
+    date_from: Annotated[date | None, Query()] = None,
+    date_to: Annotated[date | None, Query()] = None,
+    evidence_kind: Annotated[
+        Literal["synthetic", "authorized_pilot"], Query()
+    ] = "synthetic",
+) -> Response:
+    report = _human_effort_report(
+        db,
+        date_from=date_from,
+        date_to=date_to,
+        evidence_kind=evidence_kind,
+    )
+    return Response(
+        content=human_effort_markdown(report),
+        media_type="text/markdown; charset=utf-8",
+        headers={
+            "Content-Disposition": (
+                f'attachment; filename="pm-1-diagnostico-{report["date_to"]}.md"'
+            )
+        },
     )
 
 

@@ -189,6 +189,15 @@ El bloque post-plan 9.3 hace visible ese diagnóstico en el portal:
 - diseño adaptable y protección explícita contra exposición de datos identificatorios;
 - cuentas demo con correos válidos y migración idempotente desde los valores `.local` heredados.
 
+PM-1 inicia el plan de mejora con diagnóstico, no con una función nueva:
+
+- línea base agregada de minutos por factura y fuente de trabajo;
+- ranking reproducible de fricciones con cobertura, volumen, antigüedad y concentración;
+- informe JSON/Markdown y dataset CSV sin identificadores ni texto libre;
+- ficha de una sola oportunidad con objetivo condicionado de reducción de 20%;
+- minutos obligatorios en nuevas decisiones humanas de conciliación, separados del tiempo de espera;
+- puerta `provisional_synthetic`, que mantiene PM-2 bloqueada hasta contar con evidencia autorizada.
+
 ## Servicios
 
 - `db`: PostgreSQL 16.
@@ -257,5 +266,6 @@ Los CSV listos para importar están en `data/demo/imports`. Incluyen tres pymes 
 - `docs/fase-8/estado.md`: informe final, decisión formal G4 y paquete verificable de postulación.
 - `docs/post-plan/`: endurecimiento, observabilidad, runbook y panel administrativo posteriores al plan original.
 - `docs/post-plan/plan-mejora-fases.md`: fases PM-0 a PM-6, métricas y puertas que controlan todo desarrollo posterior.
+- `docs/post-plan/estado-pm-1.md`: diagnóstico reproducible, brechas de medición y estado provisional de PM-G1.
 - `examples/`: archivos de facturas y contactos para probar las importaciones.
 

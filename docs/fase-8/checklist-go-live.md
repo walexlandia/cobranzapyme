@@ -11,7 +11,7 @@ El responsable de release solo puede declarar **GO** cuando todos los controles 
 | ID | Control | Evidencia requerida | Estado local |
 |---|---|---|---|
 | GL-01 | Commit y versión identificados | Commit de release y `release/phase-8.4.json` | PASS |
-| GL-02 | Migraciones lineales | Una sola cabeza Alembic, actualmente `0016` | PASS |
+| GL-02 | Migraciones lineales | Una sola cabeza Alembic, actualmente `0017` | PASS |
 | GL-03 | Compilación y checks offline | `compileall`, 28 checks y build web | PASS |
 | GL-04 | PostgreSQL recuperable | Respaldo portable, restauración aislada, tablas y marcador verificados | PASS |
 | GL-05 | Aislamiento y auditoría | Pruebas preparadas e invariantes PostgreSQL | PASS local |

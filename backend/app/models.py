@@ -571,6 +571,10 @@ class ReconciliationProposal(BaseRecord, Base):
             unique=True,
             postgresql_where=text("status = 'confirmed'"),
         ),
+        CheckConstraint(
+            "human_minutes IS NULL OR (human_minutes >= 0 AND human_minutes <= 480)",
+            name="ck_reconciliation_human_minutes",
+        ),
     )
 
     client_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("clients.id"), nullable=False, index=True)
@@ -584,6 +588,7 @@ class ReconciliationProposal(BaseRecord, Base):
     reviewed_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"), index=True)
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     review_note: Mapped[str | None] = mapped_column(Text)
+    human_minutes: Mapped[Decimal | None] = mapped_column(Numeric(10, 2))
 
 
 class ReconciliationItem(BaseRecord, Base):

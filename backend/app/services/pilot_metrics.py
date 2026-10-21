@@ -152,7 +152,7 @@ def build_pilot_metrics(
             )
         )
     )
-    human_minutes = sum(
+    exception_human_minutes = sum(
         (Decimal(item.human_minutes or 0) for item in exceptions), Decimal("0")
     )
     pilot_log_entries = list(
@@ -167,7 +167,7 @@ def build_pilot_metrics(
     logged_human_minutes = sum(
         (Decimal(item.human_minutes or 0) for item in pilot_log_entries), Decimal("0")
     )
-    human_minutes += logged_human_minutes
+    human_minutes = exception_human_minutes + logged_human_minutes
     message_links = list(
         db.scalars(
             select(MessageInvoice).where(
@@ -217,6 +217,10 @@ def build_pilot_metrics(
         for proposal in proposals
         if proposal.status in {"confirmed", "rejected"} and proposal.reviewed_at is not None
     ]
+    reconciliation_human_minutes = sum(
+        (Decimal(proposal.human_minutes or 0) for proposal in decisions), Decimal("0")
+    )
+    human_minutes += reconciliation_human_minutes
     attributions = (
         list(
             db.scalars(
@@ -335,8 +339,9 @@ def build_pilot_metrics(
         },
         "operations": {
             "human_minutes": _decimal(human_minutes),
-            "exception_human_minutes": _decimal(human_minutes - logged_human_minutes),
+            "exception_human_minutes": _decimal(exception_human_minutes),
             "logged_human_minutes": _decimal(logged_human_minutes),
+            "reconciliation_human_minutes": _decimal(reconciliation_human_minutes),
             "messages": _mode_breakdown(
                 sum(message.mode == "automatic" for message in messages),
                 sum(message.mode == "manual" for message in messages),

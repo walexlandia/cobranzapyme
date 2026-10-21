@@ -64,11 +64,18 @@ def test_bank_statement_proposal_confirmation_is_supervised_and_idempotent(
             "client_id": str(tenant.id),
             "decision": "confirmed",
             "note": "RUT, monto y fecha revisados por operador.",
+            "human_minutes": "6.5",
         },
         headers=headers,
     )
     assert confirmed.status_code == 200
     assert confirmed.json()["status"] == "confirmed"
+    assert confirmed.json()["human_minutes"] == "6.50"
+    metrics = client.get(
+        f"/api/v1/metrics/pilot?client_id={tenant.id}", headers=headers
+    )
+    assert metrics.status_code == 200
+    assert metrics.json()["operations"]["reconciliation_human_minutes"] == "6.50"
     db.refresh(invoice)
     assert invoice.status == InvoiceStatus.PAID
     payment = db.scalar(
@@ -81,7 +88,11 @@ def test_bank_statement_proposal_confirmation_is_supervised_and_idempotent(
     assert transaction is not None and transaction.status == "matched"
     repeated = client.post(
         f"/api/v1/payments/reconciliation-proposals/{proposal['id']}/decision",
-        json={"client_id": str(tenant.id), "decision": "confirmed"},
+        json={
+            "client_id": str(tenant.id),
+            "decision": "confirmed",
+            "human_minutes": "1",
+        },
         headers=headers,
     )
     assert repeated.status_code == 409

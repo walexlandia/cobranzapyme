@@ -65,6 +65,7 @@ def _proposal_view(db: Session, proposal: ReconciliationProposal) -> Reconciliat
         reviewed_by=proposal.reviewed_by,
         reviewed_at=proposal.reviewed_at,
         review_note=proposal.review_note,
+        human_minutes=proposal.human_minutes,
         created_at=proposal.created_at,
         transaction={
             "external_id": transaction.external_id,
@@ -350,6 +351,7 @@ def review_reconciliation_proposal(
             proposal,
             decision=payload.decision,
             note=payload.note,
+            human_minutes=payload.human_minutes,
             actor_id=user.id,
         )
     except ValueError as exc:

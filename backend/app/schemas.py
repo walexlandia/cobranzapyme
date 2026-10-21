@@ -312,6 +312,7 @@ class ReconciliationProposalView(BaseModel):
     reviewed_by: uuid.UUID | None
     reviewed_at: datetime | None
     review_note: str | None
+    human_minutes: Decimal | None
     created_at: datetime
     transaction: dict
     invoices: list[dict]
@@ -321,6 +322,7 @@ class ReconciliationDecision(BaseModel):
     client_id: uuid.UUID
     decision: Literal["confirmed", "rejected"]
     note: str | None = Field(default=None, max_length=2000)
+    human_minutes: Decimal = Field(ge=0, le=480)
 
 
 class CommissionRules(BaseModel):
@@ -1022,6 +1024,24 @@ class PilotMetricsView(BaseModel):
     resolution_times: list[dict[str, Any]] = Field(default_factory=list)
     trend: list[PilotTrendPoint] = Field(default_factory=list)
     generated_at: datetime
+
+
+class HumanEffortDiagnosticView(BaseModel):
+    schema_version: str
+    date_from: date
+    date_to: date
+    period_days: int
+    evidence_kind: Literal["synthetic", "authorized_pilot"]
+    scope: dict[str, Any]
+    baseline: dict[str, Any]
+    breakdowns: dict[str, Any]
+    friction_ranking: list[dict[str, Any]] = Field(default_factory=list)
+    reconciliation: dict[str, Any]
+    measurement_gaps: list[dict[str, Any]] = Field(default_factory=list)
+    selected_opportunity: dict[str, Any] | None
+    pm_g1: dict[str, Any]
+    privacy: dict[str, Any]
+    fingerprint_sha256: str
 
 
 class ClientTrendView(BaseModel):

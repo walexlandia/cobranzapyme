@@ -361,6 +361,7 @@ def decide_reconciliation(
     *,
     decision: str,
     note: str | None,
+    human_minutes: Decimal,
     actor_id: uuid.UUID,
 ) -> list[Payment]:
     if proposal.status != "pending":
@@ -384,6 +385,7 @@ def decide_reconciliation(
     proposal.reviewed_by = actor_id
     proposal.reviewed_at = now
     proposal.review_note = note
+    proposal.human_minutes = Decimal(human_minutes).quantize(Decimal("0.01"))
     if decision == "rejected":
         for item in items or [None]:
             record_event(
@@ -398,6 +400,7 @@ def decide_reconciliation(
                     "proposal_id": str(proposal.id),
                     "bank_transaction_id": str(transaction.id),
                     "score": str(proposal.score),
+                    "human_minutes": str(proposal.human_minutes),
                     "note": note,
                 },
             )
@@ -447,6 +450,7 @@ def decide_reconciliation(
                 "amount": str(payment.amount),
                 "score": str(proposal.score),
                 "score_breakdown": proposal.score_breakdown,
+                "human_minutes": str(proposal.human_minutes),
                 "origin": "bank_statement",
                 "note": note,
             },
