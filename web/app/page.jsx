@@ -86,6 +86,30 @@ const money = new Intl.NumberFormat("es-CL", {
   maximumFractionDigits: 0,
 });
 
+const operationalStatusLabels = {
+  healthy: "Saludable",
+  warning: "Atención",
+  critical: "Crítico",
+};
+
+const operationalAlertLabels = {
+  legacy_plaintext_documents: "Documento legado sin cifrado",
+  open_critical_incidents: "Incidente crítico abierto",
+  failed_messages: "Mensaje fallido",
+  oldest_pending_job: "Cola atrasada",
+  pending_documents: "Revisión documental acumulada",
+  open_exceptions: "Bandeja de excepciones acumulada",
+  worker_not_observed: "Worker no observado",
+  worker_degraded: "Worker degradado",
+};
+
+function durationLabel(seconds) {
+  if (seconds === null || seconds === undefined) return "Sin dato";
+  if (seconds < 60) return `${seconds} s`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)} min`;
+  return `${Math.floor(seconds / 3600)} h ${Math.floor((seconds % 3600) / 60)} min`;
+}
+
 function ApiStatus({ state }) {
   const labels = { checking: "Verificando API", ready: "Sistema disponible", offline: "API sin conexión" };
   return <div className={`system-status ${state}`}><i /> {labels[state]}</div>;
@@ -821,6 +845,86 @@ function AccessLogsPanel({ request }) {
     <Message value={notice} onClose={() => setNotice(null)} />
     <section className="stats-grid access-stats"><Stat label="Accesos registrados" value={logs.length} note={`últimos ${limit}`} /><Stat label="Usuarios" value={users} note="identidades distintas" /><Stat label="Respuestas con error" value={failures} note="estado HTTP 4xx/5xx" /><Stat label="Duración media" value={`${average} ms`} note="tiempo de respuesta" /></section>
     <article className="access-card"><div className="card-heading"><div><p className="kicker">E12-03 · LEDGER INMUTABLE</p><h3>Accesos a datos</h3></div><div className="queue-actions"><select value={limit} onChange={(event) => setLimit(Number(event.target.value))}><option value="50">50 registros</option><option value="100">100 registros</option><option value="250">250 registros</option></select><button type="button" className="ghost" onClick={load}>Actualizar</button></div></div><div className="table-wrap"><table><thead><tr><th>Fecha</th><th>Usuario / rol</th><th>Cliente</th><th>Solicitud</th><th>Estado</th><th>Duración</th><th>Solicitud ID</th></tr></thead><tbody>{logs.map((item) => <tr key={item.id}><td>{new Date(item.created_at).toLocaleString("es-CL")}</td><td><b>{item.actor_role}</b><small>{item.user_id.slice(0, 8)}…</small></td><td><small>{item.client_id ? `${item.client_id.slice(0, 8)}…` : "sin alcance"}</small></td><td><b>{item.method}</b><small>{item.path}</small></td><td><span className={`status-pill ${item.status_code < 400 ? "matched" : "rejected"}`}>{item.status_code}</span></td><td>{item.duration_ms} ms</td><td><small>{item.request_id}</small></td></tr>)}{!logs.length && <tr><td colSpan="7" className="empty">Aún no hay accesos autenticados registrados.</td></tr>}</tbody></table></div><p className="access-note">No se almacenan tokens ni cuerpos de solicitudes. El origen se conserva únicamente como hash seudonimizado.</p></article>
+  </section>;
+}
+
+function OperationsPanel({ request }) {
+  const [snapshot, setSnapshot] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [notice, setNotice] = useState(null);
+
+  const load = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
+    try {
+      setSnapshot(await request("/api/v1/operations/observability"));
+      setNotice(null);
+    } catch (error) {
+      setNotice({ type: "error", text: error.message });
+    } finally {
+      if (!silent) setLoading(false);
+    }
+  }, [request]);
+
+  useEffect(() => {
+    load();
+    const interval = window.setInterval(() => load(true), 30_000);
+    return () => window.clearInterval(interval);
+  }, [load]);
+
+  if (loading && !snapshot) {
+    return <section className="operations-layout"><div className="operations-loading">Consultando salud operativa…</div></section>;
+  }
+
+  if (!snapshot) {
+    return <section className="operations-layout"><Message value={notice} onClose={() => setNotice(null)} /><button type="button" className="secondary retry-button" onClick={() => load()}>Reintentar diagnóstico</button></section>;
+  }
+
+  const status = snapshot.overall_status;
+  const worker = snapshot.worker;
+  const workload = snapshot.workload;
+  const runtime = snapshot.runtime;
+  const requestErrors = (runtime.status_families?.["4xx"] || 0) + (runtime.status_families?.["5xx"] || 0);
+  const workerHealthy = worker.observed && worker.status === "healthy" && (worker.stale_seconds ?? Infinity) < snapshot.thresholds.worker_warning_stale_seconds;
+
+  return <section className="operations-layout">
+    <Message value={notice} onClose={() => setNotice(null)} />
+    <section className={`operations-hero ${status}`} aria-live="polite">
+      <div className="operations-status-mark" aria-hidden="true"><span /><span /><span /></div>
+      <div><p className="kicker">DIAGNÓSTICO GLOBAL · SOLO ADMINISTRACIÓN</p><h3>{operationalStatusLabels[status]}</h3><p>{snapshot.alerts.length ? `${snapshot.alerts.length} condición${snapshot.alerts.length === 1 ? "" : "es"} requiere${snapshot.alerts.length === 1 ? "" : "n"} revisión humana.` : "Todos los indicadores locales están dentro de sus umbrales."}</p></div>
+      <div className="operations-refresh"><time dateTime={snapshot.generated_at}>Actualizado {new Date(snapshot.generated_at).toLocaleString("es-CL")}</time><button type="button" className="secondary" onClick={() => load()} disabled={loading}>{loading ? "Actualizando…" : "Actualizar ahora"}</button><small>Actualización automática cada 30 segundos</small></div>
+    </section>
+
+    <section className="stats-grid operations-stats" aria-label="Resumen de salud operativa">
+      <Stat label="Estado general" value={operationalStatusLabels[status]} note={`${snapshot.alerts.length} alertas activas`} />
+      <Stat label="Worker" value={workerHealthy ? "Disponible" : "Revisar"} note={worker.observed ? `último latido hace ${durationLabel(worker.stale_seconds)}` : "sin latido registrado"} />
+      <Stat label="Cola pendiente" value={workload.pending_jobs} note={workload.oldest_pending_job_age_seconds === null ? "sin trabajos pendientes" : `más antiguo: ${durationLabel(workload.oldest_pending_job_age_seconds)}`} />
+      <Stat label="Solicitudes API" value={runtime.total_requests} note={`${requestErrors} respuestas 4xx/5xx`} />
+    </section>
+
+    <section className="operations-grid">
+      <article className="operations-card alerts-card">
+        <div className="card-heading"><div><p className="kicker">PRIORIZACIÓN</p><h3>Alertas activas</h3></div><span className={`health-badge ${status}`}>{operationalStatusLabels[status]}</span></div>
+        <div className="operational-alert-list">{snapshot.alerts.map((alert) => <article key={alert.key} className={alert.severity}><i aria-hidden="true">{alert.severity === "critical" ? "!" : "·"}</i><div><b>{operationalAlertLabels[alert.key] || alert.key}</b><p>{alert.message}</p><small>Valor: {alert.value} · Umbral: {alert.threshold}</small></div></article>)}{!snapshot.alerts.length && <div className="healthy-empty"><i>✓</i><div><b>Sin alertas operativas</b><span>La cola, el worker y las bandejas están dentro de los límites configurados.</span></div></div>}</div>
+      </article>
+
+      <article className="operations-card worker-card">
+        <div className="card-heading"><div><p className="kicker">PROCESAMIENTO ASÍNCRONO</p><h3>Worker</h3></div><span className={`health-badge ${workerHealthy ? "healthy" : "critical"}`}>{worker.status || "No observado"}</span></div>
+        <dl className="operations-definition"><div><dt>Último latido</dt><dd>{durationLabel(worker.stale_seconds)}</dd></div><div><dt>Fallos consecutivos</dt><dd>{worker.consecutive_failures}</dd></div><div><dt>Último éxito</dt><dd>{worker.last_success_at ? new Date(worker.last_success_at).toLocaleString("es-CL") : "Sin registro"}</dd></div><div><dt>Último fallo</dt><dd>{worker.last_failure_at ? new Date(worker.last_failure_at).toLocaleString("es-CL") : "Sin registro"}</dd></div></dl>
+        <div className="last-cycle"><span>Último ciclo</span><div><b>{worker.last_cycle?.clients_processed ?? 0}</b><small>clientes</small></div><div><b>{worker.last_cycle?.invoices_evaluated ?? 0}</b><small>facturas</small></div><div><b>{worker.last_cycle?.jobs_created ?? 0}</b><small>creados</small></div><div><b>{worker.last_cycle?.jobs_processed ?? 0}</b><small>procesados</small></div></div>
+      </article>
+
+      <article className="operations-card workload-card">
+        <div className="card-heading"><div><p className="kicker">CARGA DE TRABAJO</p><h3>Bandejas operativas</h3></div><span className="read-only">Datos agregados</span></div>
+        <div className="workload-grid"><div><span>Excepciones abiertas</span><b>{workload.open_exceptions}</b></div><div><span>Incidentes críticos</span><b>{workload.open_critical_incidents}</b></div><div><span>Documentos pendientes</span><b>{workload.pending_documents}</b></div><div><span>Mensajes fallidos</span><b>{workload.failed_messages}</b></div><div><span>Documentos legados</span><b>{workload.legacy_plaintext_documents}</b></div><div><span>Jobs pendientes</span><b>{workload.pending_jobs}</b></div></div>
+      </article>
+
+      <article className="operations-card runtime-card">
+        <div className="card-heading"><div><p className="kicker">TELEMETRÍA ACOTADA</p><h3>Proceso API</h3></div><span className="read-only">Uptime {durationLabel(Math.floor(runtime.uptime_seconds))}</span></div>
+        <div className="runtime-summary"><div><span>Duración media</span><b>{runtime.average_duration_ms} ms</b></div><div><span>En curso</span><b>{runtime.inflight_requests}</b></div><div><span>Máximo simultáneo</span><b>{runtime.max_inflight_requests}</b></div></div>
+        <div className="telemetry-groups"><div><span>Respuestas HTTP</span>{Object.entries(runtime.status_families || {}).map(([label, value]) => <p key={label}><b>{label}</b><progress max={Math.max(1, runtime.total_requests)} value={value} /><small>{value}</small></p>)}</div><div><span>Latencia</span>{Object.entries(runtime.latency_buckets || {}).map(([label, value]) => <p key={label}><b>{label.replaceAll("_", " ")}</b><progress max={Math.max(1, runtime.total_requests)} value={value} /><small>{value}</small></p>)}</div></div>
+      </article>
+    </section>
+    <p className="operations-privacy-note">Este panel no expone clientes, usuarios, RUT, folios, correos, cuerpos de mensajes ni documentos. Las alertas informan condiciones y nunca ejecutan acciones automáticamente.</p>
   </section>;
 }
 
@@ -1640,6 +1744,7 @@ export default function Home() {
     exceptions: ["IA SUPERVISADA", "Clasificación y excepciones"],
     payments: ["PAGOS", "Conciliación supervisada"],
     access: ["SEGURIDAD", "Registro de accesos"],
+    operations: ["POST-PLAN 9.3", "Salud operativa"],
     metrics: ["PILOTO", "Métricas operativas y económicas"],
     pilot_operations: ["PILOTO ASISTIDO", "Recorrido, decisiones e incidencias"],
     final_report: ["FASE 8", "Informe final y decisión G4"],
@@ -1664,6 +1769,7 @@ export default function Home() {
           {canOperate && <button className={activeView === "metrics" ? "active" : ""} onClick={() => setActiveView("metrics")}><i>10</i>Métricas</button>}
           {canOperate && <button className={activeView === "pilot_operations" ? "active" : ""} onClick={() => setActiveView("pilot_operations")}><i>11</i>Piloto</button>}
           {canOperate && <button className={activeView === "final_report" ? "active" : ""} onClick={() => setActiveView("final_report")}><i>12</i>Cierre</button>}
+          {user?.role === "admin" && <button className={activeView === "operations" ? "active" : ""} onClick={() => setActiveView("operations")}><i>13</i>Salud</button>}
         </nav>
         <div className="session-card">
           <span>{user.role}</span><b>{user.full_name}</b><small>{user.email}</small><button type="button" onClick={logout}>Cerrar sesión</button>
@@ -1675,8 +1781,8 @@ export default function Home() {
           <div><p className="kicker">{viewTitle[0]}</p><h2>{viewTitle[1]}</h2></div>
           <div className="topbar-actions">
             <ApiStatus state={apiState} />
-            {canOperate && <select value={selectedClientId} onChange={(event) => setSelectedClientId(event.target.value)} aria-label="Cliente activo">{clients.map((client) => <option key={client.id} value={client.id}>{client.name}</option>)}</select>}
-            {canOperate && <button type="button" className="secondary" onClick={() => setShowClientForm(true)}>+ Nuevo cliente</button>}
+            {canOperate && activeView !== "operations" && <select value={selectedClientId} onChange={(event) => setSelectedClientId(event.target.value)} aria-label="Cliente activo">{clients.map((client) => <option key={client.id} value={client.id}>{client.name}</option>)}</select>}
+            {canOperate && activeView !== "operations" && <button type="button" className="secondary" onClick={() => setShowClientForm(true)}>+ Nuevo cliente</button>}
           </div>
         </header>
 
@@ -1761,6 +1867,8 @@ export default function Home() {
           <PilotOperationsPanel clientId={selectedClientId} invoices={invoices} request={request} onOpenView={setActiveView} />
         ) : activeView === "final_report" ? (
           <FinalReportPanel request={request} download={download} user={user} />
+        ) : activeView === "operations" ? (
+          <OperationsPanel request={request} />
         ) : (
           <AccessLogsPanel request={request} />
         )}

@@ -74,10 +74,16 @@ DEMO_PAYERS = [
     ("77361871-2", "Energía Industrial Demo SpA"),
 ]
 
+LEGACY_DEMO_ADMIN_EMAIL = "admin@recupera.local"
+
 
 def seed() -> None:
     with SessionLocal() as db:
         admin = db.scalar(select(User).where(User.email == settings.demo_admin_email.lower()))
+        if admin is None and settings.demo_admin_email.lower() == "admin@example.com":
+            admin = db.scalar(select(User).where(User.email == LEGACY_DEMO_ADMIN_EMAIL))
+            if admin is not None:
+                admin.email = settings.demo_admin_email.lower()
         if admin is None:
             admin = User(
                 email=settings.demo_admin_email.lower(),
@@ -245,8 +251,13 @@ def seed() -> None:
 
         base_date = date.today() - timedelta(days=90)
         for client_index, client in enumerate(clients):
-            client_user_email = f"cliente{client_index + 1}@recupera.local"
+            client_user_email = f"cliente{client_index + 1}@example.com"
             client_user = db.scalar(select(User).where(User.email == client_user_email))
+            if client_user is None:
+                legacy_client_email = f"cliente{client_index + 1}@recupera.local"
+                client_user = db.scalar(select(User).where(User.email == legacy_client_email))
+                if client_user is not None:
+                    client_user.email = client_user_email
             if client_user is None:
                 client_user = User(
                     email=client_user_email,

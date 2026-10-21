@@ -980,6 +980,8 @@ def check_post_plan_hardening_assets() -> None:
     )
     assert "generate_dependency_inventory.py --check" in verifier
     assert "compose.pilot.yaml" in verifier
+    assert '{{.Config.WorkingDir}}' in verifier
+    assert '${webWorkdir}/app:ro' in verifier
     assert (ROOT / "docs" / "post-plan" / "modelo-amenazas.md").is_file()
     assert (ROOT / "docs" / "post-plan" / "estado-9.1.md").is_file()
 
@@ -1014,6 +1016,33 @@ def check_post_plan_observability_assets() -> None:
     assert (ROOT / "scripts" / "simulate_worker_resilience.py").is_file()
     assert (ROOT / "docs" / "post-plan" / "runbook-observabilidad.md").is_file()
     assert (ROOT / "docs" / "post-plan" / "estado-9.2.md").is_file()
+
+
+def check_post_plan_operations_ui_assets() -> None:
+    page = (ROOT / "web" / "app" / "page.jsx").read_text(encoding="utf-8")
+    styles = (ROOT / "web" / "app" / "globals.css").read_text(encoding="utf-8")
+    config = (ROOT / "backend" / "app" / "config.py").read_text(encoding="utf-8")
+    seed = (ROOT / "backend" / "app" / "seed.py").read_text(encoding="utf-8")
+
+    assert "function OperationsPanel" in page
+    assert 'request("/api/v1/operations/observability")' in page
+    assert "window.setInterval(() => load(true), 30_000)" in page
+    assert 'user?.role === "admin"' in page
+    assert 'setActiveView("operations")' in page
+    assert "Este panel no expone clientes" in page
+    assert all(
+        selector in styles
+        for selector in (
+            ".operations-hero",
+            ".operations-grid",
+            ".operational-alert-list",
+            ".operations-privacy-note",
+        )
+    )
+    assert 'demo_admin_email: str = "admin@example.com"' in config
+    assert 'client_user_email = f"cliente{client_index + 1}@example.com"' in seed
+    assert "LEGACY_DEMO_ADMIN_EMAIL" in seed
+    assert (ROOT / "docs" / "post-plan" / "estado-9.3.md").is_file()
 
 
 def check_pilot_metrics_calculation() -> None:
@@ -1281,6 +1310,7 @@ def main() -> None:
         check_phase8_release_readiness_assets,
         check_post_plan_hardening_assets,
         check_post_plan_observability_assets,
+        check_post_plan_operations_ui_assets,
         check_pilot_metrics_calculation,
         check_client_portal_calculation,
         check_workflow_rules,

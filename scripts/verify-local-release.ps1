@@ -44,11 +44,17 @@ try {
         Invoke-Checked {
             docker image inspect $WebImage | Out-Null
         } "La imagen web local indicada no existe."
+        $webWorkdir = docker image inspect --format "{{.Config.WorkingDir}}" $WebImage
+        if ($LASTEXITCODE -ne 0) { throw "No fue posible inspeccionar el directorio de trabajo de la imagen web." }
+        $webWorkdir = ([string]$webWorkdir).Trim()
+        if ([string]::IsNullOrWhiteSpace($webWorkdir) -or $webWorkdir -eq "/") {
+            $webWorkdir = "/app"
+        }
         Invoke-Checked {
-            docker run --rm -v "${projectRoot}/web/package-lock.json:/workspace/package-lock.json:ro" $WebImage node -e "const lock=require('/workspace/package-lock.json'); for (const name of ['next','react','react-dom']) { const expected=lock.packages['node_modules/'+name].version; const actual=require('/app/node_modules/'+name+'/package.json').version; if(actual!==expected) throw new Error(name+': expected '+expected+', got '+actual); }"
+            docker run --rm -v "${projectRoot}/web/package-lock.json:${webWorkdir}/package-lock.json:ro" $WebImage node -e "const path=require('path'); const root=process.cwd(); const lock=require(path.join(root,'package-lock.json')); for (const name of ['next','react','react-dom']) { const expected=lock.packages['node_modules/'+name].version; const actual=require(path.join(root,'node_modules',name,'package.json')).version; if(actual!==expected) throw new Error(name+': expected '+expected+', got '+actual); }"
         } "La imagen web no coincide con las dependencias directas fijadas."
         Invoke-Checked {
-            docker run --rm -v "${projectRoot}/web/app:/app/app:ro" -v "${projectRoot}/web/next.config.mjs:/app/next.config.mjs:ro" $WebImage npm run build
+            docker run --rm -v "${projectRoot}/web/app:${webWorkdir}/app:ro" -v "${projectRoot}/web/next.config.mjs:${webWorkdir}/next.config.mjs:ro" -v "${webWorkdir}/.next" $WebImage npm run build
         } "Falló el build web de producción."
     } else {
         Write-Output "SKIP web build: indique -WebImage para validar con una imagen local."

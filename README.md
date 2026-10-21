@@ -182,6 +182,13 @@ El bloque post-plan 9.2 agrega observabilidad y resiliencia local:
 - latido persistente y backoff exponencial del worker;
 - ensayo offline de degradación/recuperación y runbook de incidentes.
 
+El bloque post-plan 9.3 hace visible ese diagnóstico en el portal:
+
+- panel de salud exclusivo para administradores, con alertas, cola, worker y telemetría agregada;
+- actualización manual y automática cada 30 segundos, sin ejecutar acciones operativas;
+- diseño adaptable y protección explícita contra exposición de datos identificatorios;
+- cuentas demo con correos válidos y migración idempotente desde los valores `.local` heredados.
+
 ## Servicios
 
 - `db`: PostgreSQL 16.
@@ -248,5 +255,6 @@ Los CSV listos para importar están en `data/demo/imports`. Incluyen tres pymes 
 - `docs/fase-6/estado.md`: pagos manuales, cartolas y conciliación supervisada.
 - `docs/fase-7/estado.md`: cierre local de vista cliente, documentos, métricas y operación demostrable del piloto asistido.
 - `docs/fase-8/estado.md`: informe final, decisión formal G4 y paquete verificable de postulación.
+- `docs/post-plan/`: endurecimiento, observabilidad, runbook y panel administrativo posteriores al plan original.
 - `examples/`: archivos de facturas y contactos para probar las importaciones.
 

@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     minio_endpoint: str = "minio:9000"
     minio_secure: bool = False
     minio_bucket: str = "recupera-documents"
-    demo_admin_email: str = "admin@recupera.local"
+    demo_admin_email: str = "admin@example.com"
     demo_admin_password: str = "ChangeMe123!"
 
     @property
