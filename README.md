@@ -158,6 +158,14 @@ El incremento 8.3 prepara la entrega verificable:
 - marca visible de borrador cuando la evidencia es sintética;
 - exclusión de datos identificatorios, UUID internos y texto libre de decisiones.
 
+El incremento 8.4 cierra la preparación técnica local:
+
+- contrato de release 0.8.4 y checklist estricto de go-live;
+- verificador de artefactos, migraciones, esquemas y secretos sin exponer valores;
+- ensayo desechable de respaldo y restauración con marcador de datos;
+- procedimiento de rollback, handoff RACI y registro de bloqueos externos;
+- regla explícita de NO-GO mientras falten infraestructura, autorizaciones, pymes y piloto real.
+
 ## Servicios
 
 - `db`: PostgreSQL 16.
@@ -182,6 +190,7 @@ El repositorio incluye un camino explícito para equipos con firewall restrictiv
 
 ```powershell
 python scripts\offline_checks.py
+python scripts\release_readiness.py
 python scripts\generate_phase5_evaluation_fixture.py
 docker build --network=none -f web/Dockerfile.offline -t recupera-web:offline web
 ```

@@ -3,11 +3,14 @@ from functools import lru_cache
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from app.version import APP_VERSION
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     app_name: str = "Recupera API"
+    app_version: str = APP_VERSION
     environment: str = "development"
     database_url: str = "postgresql+psycopg://recupera:recupera_dev_only@db:5432/recupera"
     jwt_secret: str = Field(

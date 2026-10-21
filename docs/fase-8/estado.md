@@ -43,6 +43,20 @@ La migración `0015` agrega `pilot_closure_snapshots`. El snapshot conserva excl
 
 Guía de uso y verificación: `docs/fase-8/paquete-postulacion.md`.
 
+## Incremento 8.4 — Cierre técnico y preparación para operación real
+
+| Entregable | Estado local | Evidencia |
+|---|---|---|
+| Contrato de release 0.8.4 | Completo | Manifiesto legible por máquina con versiones, servicios, artefactos y bloqueos externos |
+| Checklist de go-live | Completo como instrumento | Regla GO/NO-GO; cualquier `SKIP`, `BLOCKED` o evidencia vencida impide salir |
+| Verificador de readiness | Completo localmente | Revisa artefactos, cabeza de migración, esquemas de evidencia y configuración sin imprimir secretos |
+| Rollback | Completo como procedimiento | Pausa, preservación de evidencia, reversión de aplicación y restauración aislada |
+| Ensayo de respaldo/restauración | Automatizado | Base Docker desechable, dump portable, restauración, conteo y marcador de datos |
+| Handoff operativo | Completo | RACI, entrega mínima por turno, cadencias, accesos y continuidad |
+| Pendientes externos | Completo como registro | Siete dependencias con dueño, evidencia de salida y bloqueo explícito |
+
+Documentos: `checklist-go-live.md`, `release-rollback.md`, `handoff-operativo.md` y `pendientes-externos.md`.
+
 Documento de continuidad: `docs/fase-8/backlog-posterior.md`.
 
 ## Límites deliberados
@@ -62,7 +76,7 @@ La funcionalidad permite cerrar el informe, pero los datos sintéticos no valida
 ## Validación local
 
 - Compilación Python aprobada para aplicación, pruebas y scripts.
-- 27 comprobaciones offline aprobadas, incluidas migración `0015`, escenarios económicos, backlog, contratos de cierre G4 y contenido determinista del paquete de postulación.
+- 28 comprobaciones offline aprobadas, incluidas migración `0015`, escenarios económicos, backlog, contratos de cierre G4, paquete determinista y contrato de release 0.8.4.
 - Build de producción Next.js aprobado usando la imagen local `recupera-web:phase7-4` y los archivos de Fase 8.3 montados sin red.
 - Esquema completo de 37 tablas creado en PostgreSQL 16 dentro de una base desechable.
 - Trigger de cierre probado en PostgreSQL: bloquea cambios de evidencia, segunda decisión y borrado; permite únicamente la primera transición válida a `decided`.

@@ -874,6 +874,45 @@ def check_phase8_final_report_assets() -> None:
         assert (ROOT / "docs" / "fase-8" / name).is_file()
 
 
+def check_phase8_release_readiness_assets() -> None:
+    manifest_path = ROOT / "release" / "phase-8.4.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    assert manifest["release"] == "0.8.4"
+    assert manifest["database_migration_head"] == "0015"
+    assert manifest["report_schema_version"] == "fase-8.2-v1"
+    assert manifest["package_schema_version"] == "fase-8.3-v1"
+    assert all(gate["status"] == "blocked" for gate in manifest["external_gates"])
+    assert "/health/version" in manifest["health_endpoints"]
+    for relative_path in manifest["release_artifacts"]:
+        assert (ROOT / relative_path).is_file(), relative_path
+    readiness_path = ROOT / "scripts" / "release_readiness.py"
+    spec = importlib.util.spec_from_file_location("release_readiness", readiness_path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    checks = module.repository_checks(manifest)
+    assert checks and all(item.status == "PASS" for item in checks)
+    example_environment = module.environment_checks(
+        ROOT / ".env.example", expected_release=manifest["release"]
+    )
+    assert example_environment[0].status == "FAIL"
+    assert "valores de ejemplo" in example_environment[0].detail
+    rehearsal = (ROOT / "scripts" / "rehearse-release.ps1").read_text(
+        encoding="utf-8"
+    )
+    assert "recupera-release-rehearsal" in rehearsal
+    assert "pg_dump" in rehearsal and "pg_restore" in rehearsal
+    assert "release_rehearsal_marker" in rehearsal and "down --volumes" in rehearsal
+    health = (ROOT / "backend" / "app" / "routers" / "health.py").read_text(
+        encoding="utf-8"
+    )
+    version = (ROOT / "backend" / "app" / "version.py").read_text(encoding="utf-8")
+    assert 'router.get("/health/version")' in health
+    assert 'APP_VERSION = "0.8.4"' in version
+    assert 'DATABASE_MIGRATION_HEAD = "0015"' in version
+
+
 def check_pilot_metrics_calculation() -> None:
     client_id = uuid.uuid4()
     payer_id = uuid.uuid4()
@@ -1136,6 +1175,7 @@ def main() -> None:
         check_phase7_pilot_metrics_assets,
         check_phase7_pilot_operations_assets,
         check_phase8_final_report_assets,
+        check_phase8_release_readiness_assets,
         check_pilot_metrics_calculation,
         check_client_portal_calculation,
         check_workflow_rules,

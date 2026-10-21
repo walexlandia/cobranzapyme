@@ -1,0 +1,67 @@
+{
+  "release": "0.8.4",
+  "release_kind": "local_pilot_readiness",
+  "database_migration_head": "0015",
+  "report_schema_version": "fase-8.2-v1",
+  "package_schema_version": "fase-8.3-v1",
+  "required_services": [
+    "db",
+    "minio",
+    "api",
+    "worker",
+    "web",
+    "gateway"
+  ],
+  "health_endpoints": [
+    "/health/live",
+    "/health/ready",
+    "/health/version"
+  ],
+  "release_artifacts": [
+    "compose.yaml",
+    "compose.secure.yaml",
+    "backend/app/version.py",
+    "backend/migrations/versions/0015_pilot_closure.py",
+    "scripts/backup-postgres.ps1",
+    "scripts/verify-backup-restore.ps1",
+    "scripts/rehearse-release.ps1",
+    "docs/fase-8/checklist-go-live.md",
+    "docs/fase-8/release-rollback.md",
+    "docs/fase-8/handoff-operativo.md",
+    "docs/fase-8/pendientes-externos.md",
+    "docs/fase-8/ensayo-release.md"
+  ],
+  "external_gates": [
+    {
+      "id": "EXT-01",
+      "status": "blocked",
+      "description": "Infraestructura pública, dominio, TLS emitido y gestor de secretos"
+    },
+    {
+      "id": "EXT-02",
+      "status": "blocked",
+      "description": "Revisión legal, contrato y mandato de contacto aprobados"
+    },
+    {
+      "id": "EXT-03",
+      "status": "blocked",
+      "description": "Dos o tres pymes con datos y responsables autorizados"
+    },
+    {
+      "id": "EXT-04",
+      "status": "blocked",
+      "description": "Correo transaccional y WhatsApp Business validados"
+    },
+    {
+      "id": "EXT-05",
+      "status": "blocked",
+      "description": "Piloto real de seis a ocho semanas y decisión humana G4"
+    }
+  ],
+  "rollback_policy": {
+    "application": "Reinstalar las imágenes inmutables de la versión anterior",
+    "database": "Restaurar únicamente un respaldo previo verificado cuando la compatibilidad hacia atrás no sea posible",
+    "communications": "Pausar antes de cualquier rollback y reanudar solo después de verificación humana",
+    "audit": "No borrar ni reescribir eventos, accesos, atribuciones o cierres"
+  }
+}
