@@ -10,7 +10,7 @@ from app.models import Client, Event
 
 
 def test_events_cannot_be_updated_or_deleted(db: Session) -> None:
-    client = Client(name="Audit Test", rut=f"TEST-{uuid.uuid4()}", bank_details={})
+    client = Client(name="Audit Test", rut=f"T{uuid.uuid4().hex[:11]}", bank_details={})
     db.add(client)
     db.flush()
     event = Event(

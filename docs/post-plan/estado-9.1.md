@@ -10,7 +10,7 @@
 | Compose de piloto | Completo como configuración | Sin puertos directos de DB/MinIO, sin bind mounts, sin seed y sin reload |
 | Lockfile web | Completo | Dependencias directas fijadas a las versiones de la imagen local y `package-lock.json` v3 |
 | Inventario | Completo | Python directo, árbol npm, imágenes, hashes de fuentes y riesgos no resueltos |
-| Regresión local | Completo | Un comando orquesta compilación, readiness, inventario, 29 checks, Compose, build y restauración opcionales |
+| Regresión local | Completo | Un comando orquesta compilación, readiness, inventario, 30 checks, Compose, build y restauración opcionales |
 | Modelo de amenazas | Completo como revisión local | Activos, límites, controles y riesgos residuales documentados |
 
 ## Límites

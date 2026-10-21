@@ -324,7 +324,7 @@ def test_simulation_uses_controlled_date_without_writing(
 
 def test_payer_control_pauses_every_invoice_in_group(client: TestClient, db: Session) -> None:
     tenant, admin = create_tenant_user(db, suffix="payer-control", role=Role.ADMIN)
-    payer = Payer(rut="T-PAYER-CONTROL", legal_name="Pagador controlado")
+    payer = Payer(rut="P-CONTROL-01", legal_name="Pagador controlado")
     db.add(payer)
     db.flush()
     invoices = []
@@ -409,5 +409,6 @@ def test_events_reconstruct_complete_workflow_decision(client: TestClient, db: S
     assert events[3]["payload"]["external_delivery"] is False
     assert events[3]["payload"]["safety_flags"] == [
         "missing_contact",
+        "missing_sender_email",
         "missing_destination",
     ]

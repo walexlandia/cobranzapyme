@@ -66,7 +66,7 @@ def test_profile_response_never_exposes_private_tenant_data(
 ) -> None:
     tenant_a, user_a = create_tenant_user(db, suffix="profile-a")
     tenant_b, _ = create_tenant_user(db, suffix="profile-b")
-    payer = Payer(rut="PROFILE-SHARED", legal_name="Pagador compartido")
+    payer = Payer(rut="P-SHARED-001", legal_name="Pagador compartido")
     db.add(payer)
     db.flush()
     for tenant, folio in ((tenant_a, "A-001"), (tenant_b, "B-001")):

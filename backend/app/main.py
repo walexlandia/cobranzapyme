@@ -1,9 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.config import settings
 from app.access_logging import AuthenticatedAccessLogMiddleware
-from app.security_headers import SecurityHeadersMiddleware
+from app.config import settings
+from app.observability import RuntimeTelemetryMiddleware
 from app.routers import (
     access_logs,
     auth,
@@ -16,13 +16,14 @@ from app.routers import (
     imports,
     invoices,
     metrics,
+    operations,
     payability,
+    payers,
     payments,
     pilot,
-    payers,
     workflows,
 )
-
+from app.security_headers import SecurityHeadersMiddleware
 
 app = FastAPI(title=settings.app_name, version=settings.app_version)
 app.add_middleware(AuthenticatedAccessLogMiddleware)
@@ -34,6 +35,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(RuntimeTelemetryMiddleware)
 
 app.include_router(health.router)
 app.include_router(access_logs.router)
@@ -42,6 +44,7 @@ app.include_router(client_portal.router)
 app.include_router(clients.router)
 app.include_router(invoices.router)
 app.include_router(metrics.router)
+app.include_router(operations.router)
 app.include_router(imports.router)
 app.include_router(contracts.router)
 app.include_router(workflows.router)
@@ -51,4 +54,3 @@ app.include_router(payments.router)
 app.include_router(pilot.router)
 app.include_router(communications.router)
 app.include_router(exceptions.router)
-

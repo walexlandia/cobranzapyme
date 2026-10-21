@@ -978,6 +978,8 @@ def register_inbound_message(db: Session, payload: InboundMessageCreate) -> Mess
             )
         )
 
+    # SessionLocal disables autoflush; persist links before classification queries them.
+    db.flush()
     event_invoice_ids = [invoice.id for invoice in invoices] or [None]
     for invoice_id in event_invoice_ids:
         record_event(

@@ -78,9 +78,9 @@ La funcionalidad permite cerrar el informe, pero los datos sintéticos no valida
 ## Validación local
 
 - Compilación Python aprobada para aplicación, pruebas y scripts.
-- 29 comprobaciones offline aprobadas, incluidas migración `0015`, escenarios económicos, backlog, cierre G4, paquete determinista, release 0.8.4 y endurecimiento post-plan.
+- 30 comprobaciones offline aprobadas, incluida la cadena hasta `0016`, escenarios económicos, backlog, cierre G4, paquete determinista, release 0.8.4, endurecimiento y observabilidad post-plan.
 - Build de producción Next.js aprobado usando la imagen local `recupera-web:phase7-4` y los archivos de Fase 8.3 montados sin red.
-- Esquema completo de 37 tablas creado en PostgreSQL 16 dentro de una base desechable.
+- Esquema completo de 38 tablas preparado para PostgreSQL 16, incluida la persistencia del latido del worker.
 - Trigger de cierre probado en PostgreSQL: bloquea cambios de evidencia, segunda decisión y borrado; permite únicamente la primera transición válida a `decided`.
 - Prueba HTTP/PostgreSQL preparada en `backend/tests/test_final_report.py` para privacidad, exportaciones, snapshot idempotente, evidencia obsoleta, bloqueo sintético, separación de funciones e inmutabilidad.
-- La ejecución integral de `pytest` queda pendiente: el runtime backend no está disponible localmente y Docker no puede descargar dependencias por el firewall.
+- Suite integral HTTP/ORM ejecutada en PostgreSQL 16: 71 pruebas aprobadas. La ejecución también confirmó la cadena Alembic completa hasta `0016`.

@@ -70,14 +70,14 @@ def test_pilot_authorization_evidence_readiness_and_revocation(
             "contract_id": str(contract.id),
             "channels_json": '["email"]',
             "authorized_contact_name": "Representante Demo",
-            "authorized_contact_email": "representante@example.test",
+            "authorized_contact_email": "representante@example.com",
             "valid_from": date.today().isoformat(),
             "note": "Autorización ficticia para prueba local.",
         },
         files={"evidence": ("mandato.txt", BytesIO(evidence), "text/plain")},
         headers=headers,
     )
-    assert approved.status_code == 201
+    assert approved.status_code == 201, approved.text
     authorization_id = uuid.UUID(approved.json()["id"])
     authorization = db.get(PilotAuthorizationEvent, authorization_id)
     assert authorization is not None and authorization.action == "approved"

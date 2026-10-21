@@ -110,7 +110,14 @@ def upgrade() -> None:
             id, payer_id, operational_requirements, corporate_channels, payment_cycle
         )
         SELECT gen_random_uuid(), id,
-               '{"requires_purchase_order":true,"requires_hes":false,"requires_delivery_note":false,"requires_supplier_portal":false,"other_requirements":[],"risk_days_before_due":7}'::json,
+               json_build_object(
+                   'requires_purchase_order', true,
+                   'requires_hes', false,
+                   'requires_delivery_note', false,
+                   'requires_supplier_portal', false,
+                   'other_requirements', json_build_array(),
+                   'risk_days_before_due', 7
+               ),
                '{}'::json, NULL
         FROM payers
         ON CONFLICT (payer_id) DO NOTHING

@@ -69,6 +69,11 @@ from app.services.pilot_metrics import (  # noqa: E402
     _percent,
     build_pilot_metrics,
 )
+from app.services.operational_health import (  # noqa: E402
+    OperationalMetrics,
+    evaluate_operational_health,
+    worker_delay_seconds,
+)
 from app.services.workflow_engine import determine_stage, next_allowed_at, stage_windows  # noqa: E402
 from app.utils.rut import normalize_rut  # noqa: E402
 
@@ -450,6 +455,8 @@ def check_openapi_contract() -> None:
         assert "/api/v1/metrics/closures" in schema["paths"]
         assert "/api/v1/metrics/closures/{closure_id}/decision" in schema["paths"]
         assert "PilotClosureSnapshotView" in schema["components"]["schemas"]
+        assert "/api/v1/operations/observability" in schema["paths"]
+        assert "OperationsSnapshotView" in schema["components"]["schemas"]
     finally:
         if previous_module is None:
             sys.modules.pop("pydantic_settings", None)
@@ -479,6 +486,7 @@ def check_schema_compiles_for_postgresql() -> None:
         "client_document_submissions",
         "pilot_log_entries",
         "pilot_closure_snapshots",
+        "service_heartbeats",
     }
     assert set(Base.metadata.tables) == expected
     dialect = postgresql.dialect()
@@ -487,7 +495,7 @@ def check_schema_compiles_for_postgresql() -> None:
         assert "CREATE TABLE" in sql
     private_tables = expected - {
         "clients", "users", "payers", "payer_profiles", "payer_profile_revisions",
-        "pilot_closure_snapshots",
+        "pilot_closure_snapshots", "service_heartbeats",
     }
     for table_name in private_tables:
         assert "client_id" in Base.metadata.tables[table_name].columns
@@ -521,8 +529,8 @@ def check_migration_chain() -> None:
         if down_revision is not None:
             assert down_revision in revisions, f"Unknown parent {down_revision} in {path.name}"
             heads.discard(down_revision)
-    assert heads == {"0015"}, f"Unexpected migration heads: {sorted(heads)}"
-    current: str | None = "0015"
+    assert heads == {"0016"}, f"Unexpected migration heads: {sorted(heads)}"
+    current: str | None = "0016"
     visited = []
     while current is not None:
         assert current not in visited, f"Migration cycle at {current}"
@@ -879,7 +887,7 @@ def check_phase8_release_readiness_assets() -> None:
     manifest_path = ROOT / "release" / "phase-8.4.json"
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     assert manifest["release"] == "0.8.4"
-    assert manifest["database_migration_head"] == "0015"
+    assert manifest["database_migration_head"] == "0016"
     assert manifest["report_schema_version"] == "fase-8.2-v1"
     assert manifest["package_schema_version"] == "fase-8.3-v1"
     assert all(gate["status"] == "blocked" for gate in manifest["external_gates"])
@@ -911,7 +919,7 @@ def check_phase8_release_readiness_assets() -> None:
     version = (ROOT / "backend" / "app" / "version.py").read_text(encoding="utf-8")
     assert 'router.get("/health/version")' in health
     assert 'APP_VERSION = "0.8.4"' in version
-    assert 'DATABASE_MIGRATION_HEAD = "0015"' in version
+    assert 'DATABASE_MIGRATION_HEAD = "0016"' in version
 
 
 def check_post_plan_hardening_assets() -> None:
@@ -974,6 +982,38 @@ def check_post_plan_hardening_assets() -> None:
     assert "compose.pilot.yaml" in verifier
     assert (ROOT / "docs" / "post-plan" / "modelo-amenazas.md").is_file()
     assert (ROOT / "docs" / "post-plan" / "estado-9.1.md").is_file()
+
+
+def check_post_plan_observability_assets() -> None:
+    healthy, healthy_alerts = evaluate_operational_health(
+        OperationalMetrics(worker_observed=True, worker_status="healthy")
+    )
+    assert healthy == "healthy" and not healthy_alerts
+    critical, alerts = evaluate_operational_health(
+        OperationalMetrics(
+            oldest_pending_job_age_seconds=1_801,
+            legacy_plaintext_documents=1,
+            worker_observed=True,
+            worker_status="degraded",
+            worker_stale_seconds=121,
+            worker_consecutive_failures=3,
+        )
+    )
+    assert critical == "critical"
+    assert {item["key"] for item in alerts} == {
+        "legacy_plaintext_documents",
+        "oldest_pending_job",
+        "worker_degraded",
+    }
+    assert [worker_delay_seconds(value) for value in (0, 1, 2, 8)] == [30, 60, 120, 300]
+    migration = (
+        ROOT / "backend" / "migrations" / "versions" / "0016_service_heartbeats.py"
+    ).read_text(encoding="utf-8")
+    assert 'revision: str = "0016"' in migration
+    assert "service_heartbeats" in migration
+    assert (ROOT / "scripts" / "simulate_worker_resilience.py").is_file()
+    assert (ROOT / "docs" / "post-plan" / "runbook-observabilidad.md").is_file()
+    assert (ROOT / "docs" / "post-plan" / "estado-9.2.md").is_file()
 
 
 def check_pilot_metrics_calculation() -> None:
@@ -1240,6 +1280,7 @@ def main() -> None:
         check_phase8_final_report_assets,
         check_phase8_release_readiness_assets,
         check_post_plan_hardening_assets,
+        check_post_plan_observability_assets,
         check_pilot_metrics_calculation,
         check_client_portal_calculation,
         check_workflow_rules,

@@ -174,6 +174,14 @@ El bloque post-plan 9.1 agrega QA y endurecimiento sin declarar una novena fase 
 - lockfile web e inventario determinista de dependencias y contenedores;
 - comando único de regresión local y modelo de amenazas con riesgos residuales.
 
+El bloque post-plan 9.2 agrega observabilidad y resiliencia local:
+
+- telemetría HTTP acotada y sin datos personales;
+- diagnóstico agregado exclusivo para administradores;
+- reglas deterministas de alerta con umbrales versionados;
+- latido persistente y backoff exponencial del worker;
+- ensayo offline de degradación/recuperación y runbook de incidentes.
+
 ## Servicios
 
 - `db`: PostgreSQL 16.
@@ -200,6 +208,7 @@ El repositorio incluye un camino explícito para equipos con firewall restrictiv
 python scripts\offline_checks.py
 python scripts\release_readiness.py
 python scripts\generate_dependency_inventory.py --check
+python scripts\simulate_worker_resilience.py
 python scripts\generate_phase5_evaluation_fixture.py
 docker build --network=none -f web/Dockerfile.offline -t recupera-web:offline web
 ```

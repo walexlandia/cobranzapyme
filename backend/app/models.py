@@ -784,6 +784,21 @@ class WorkflowJob(BaseRecord, Base):
     payload: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
 
 
+class ServiceHeartbeat(BaseRecord, Base):
+    __tablename__ = "service_heartbeats"
+    __table_args__ = (
+        CheckConstraint("status IN ('healthy', 'degraded')", name="ck_service_heartbeat_status"),
+    )
+
+    service_name: Mapped[str] = mapped_column(String(80), unique=True, nullable=False)
+    status: Mapped[str] = mapped_column(String(20), default="healthy", nullable=False)
+    last_started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    last_success_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_failure_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    consecutive_failures: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    last_cycle: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
+
+
 class Event(Base):
     __tablename__ = "events"
     __table_args__ = (Index("ix_event_client_invoice_created", "client_id", "invoice_id", "created_at"),)

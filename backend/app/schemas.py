@@ -1156,3 +1156,21 @@ class DemoWalkthroughView(BaseModel):
     steps: list[dict[str, Any]] = Field(default_factory=list)
     generated_at: datetime
 
+
+class OperationalAlertView(BaseModel):
+    key: str
+    severity: Literal["warning", "critical"]
+    value: int | str
+    threshold: int | str
+    message: str
+
+
+class OperationsSnapshotView(BaseModel):
+    generated_at: datetime
+    overall_status: Literal["healthy", "warning", "critical"]
+    alerts: list[OperationalAlertView] = Field(default_factory=list)
+    thresholds: dict[str, int]
+    runtime: dict[str, Any]
+    workload: dict[str, int | None]
+    worker: dict[str, Any]
+
