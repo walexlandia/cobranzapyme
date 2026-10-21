@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.access_logging import AuthenticatedAccessLogMiddleware
+from app.security_headers import SecurityHeadersMiddleware
 from app.routers import (
     access_logs,
     auth,
@@ -23,15 +24,16 @@ from app.routers import (
 )
 
 
-app = FastAPI(title=settings.app_name, version="0.1.0")
+app = FastAPI(title=settings.app_name, version=settings.app_version)
 app.add_middleware(AuthenticatedAccessLogMiddleware)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=settings.cors_origin_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(SecurityHeadersMiddleware)
 
 app.include_router(health.router)
 app.include_router(access_logs.router)

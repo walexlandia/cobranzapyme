@@ -195,6 +195,14 @@ def environment_checks(path: Path | None, *, expected_release: str) -> list[Chec
     )
     release_matches = values.get("APP_VERSION") == expected_release
     environment_is_real = values.get("ENVIRONMENT") in {"pilot", "production"}
+    cors_origins = [
+        item.strip()
+        for item in values.get("CORS_ORIGINS", "").split(",")
+        if item.strip()
+    ]
+    cors_is_safe = not any(
+        origin == "*" or "localhost" in origin for origin in cors_origins
+    )
     safe = (
         not missing
         and not placeholder_keys
@@ -202,6 +210,7 @@ def environment_checks(path: Path | None, *, expected_release: str) -> list[Chec
         and independent_keys
         and release_matches
         and environment_is_real
+        and cors_is_safe
     )
     details = []
     if missing:
@@ -216,6 +225,8 @@ def environment_checks(path: Path | None, *, expected_release: str) -> list[Chec
         details.append("APP_VERSION no coincide con el manifiesto de release")
     if not environment_is_real:
         details.append("ENVIRONMENT debe ser pilot o production")
+    if not cors_is_safe:
+        details.append("CORS_ORIGINS no puede usar wildcard ni localhost")
     return [
         Check(
             "pilot_environment",

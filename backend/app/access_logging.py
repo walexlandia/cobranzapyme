@@ -40,8 +40,9 @@ class AuthenticatedAccessLogMiddleware(BaseHTTPMiddleware):
                     if remote
                     else None
                 )
+                request_id = getattr(request.state, "request_id", uuid.uuid4())
                 log = DataAccessLog(
-                    request_id=uuid.uuid4(),
+                    request_id=request_id,
                     user_id=user_id,
                     actor_role=str(payload.get("role", "unknown")),
                     client_id=client_id,

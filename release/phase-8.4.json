@@ -20,16 +20,25 @@
   "release_artifacts": [
     "compose.yaml",
     "compose.secure.yaml",
+    "compose.pilot.yaml",
+    "infra/nginx/recupera.conf",
     "backend/app/version.py",
+    "backend/app/config_validation.py",
+    "backend/app/security_headers.py",
     "backend/migrations/versions/0015_pilot_closure.py",
     "scripts/backup-postgres.ps1",
     "scripts/verify-backup-restore.ps1",
     "scripts/rehearse-release.ps1",
+    "scripts/verify-local-release.ps1",
+    "scripts/generate_dependency_inventory.py",
+    "release/dependency-inventory.json",
     "docs/fase-8/checklist-go-live.md",
     "docs/fase-8/release-rollback.md",
     "docs/fase-8/handoff-operativo.md",
     "docs/fase-8/pendientes-externos.md",
-    "docs/fase-8/ensayo-release.md"
+    "docs/fase-8/ensayo-release.md",
+    "docs/post-plan/modelo-amenazas.md",
+    "docs/post-plan/estado-9.1.md"
   ],
   "external_gates": [
     {

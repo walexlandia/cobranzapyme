@@ -26,6 +26,7 @@ sys.path.insert(0, str(ROOT / "backend"))
 
 from app.base import Base  # noqa: E402
 from app import models  # noqa: E402,F401
+from app.config_validation import real_environment_issues  # noqa: E402
 from app.domain import InvoiceStatus  # noqa: E402
 from app.schemas import (  # noqa: E402
     ContractRules,
@@ -913,6 +914,68 @@ def check_phase8_release_readiness_assets() -> None:
     assert 'DATABASE_MIGRATION_HEAD = "0015"' in version
 
 
+def check_post_plan_hardening_assets() -> None:
+    safe_values = {
+        "ENVIRONMENT": "pilot",
+        "DATABASE_URL": "postgresql+psycopg://app:strong-password@db:5432/recupera",
+        "JWT_SECRET": "jwt-secret-with-more-than-thirty-two-characters",
+        "DOCUMENT_ENCRYPTION_KEY": "document-key-with-more-than-thirty-two-chars",
+        "REPORT_ANONYMIZATION_KEY": "report-key-with-more-than-thirty-two-characters",
+        "DEMO_ADMIN_PASSWORD": "admin-password-not-used-anywhere-else",
+        "CORS_ORIGINS": "",
+    }
+    assert real_environment_issues(safe_values) == []
+    unsafe_values = {**safe_values, "JWT_SECRET": "local-development-secret-change-before-pilot"}
+    assert "JWT_SECRET" in real_environment_issues(unsafe_values)
+    repeated_values = {
+        **safe_values,
+        "REPORT_ANONYMIZATION_KEY": safe_values["DOCUMENT_ENCRYPTION_KEY"],
+    }
+    assert "INDEPENDENT_CRYPTO_KEYS" in real_environment_issues(repeated_values)
+    assert "CORS_ORIGINS" in real_environment_issues(
+        {**safe_values, "CORS_ORIGINS": "*"}
+    )
+    security_headers = (
+        ROOT / "backend" / "app" / "security_headers.py"
+    ).read_text(encoding="utf-8")
+    access_logging = (ROOT / "backend" / "app" / "access_logging.py").read_text(
+        encoding="utf-8"
+    )
+    assert "X-Content-Type-Options" in security_headers
+    assert "Strict-Transport-Security" in security_headers
+    assert 'request.url.path.startswith("/api/")' in security_headers
+    assert 'getattr(request.state, "request_id"' in access_logging
+    pilot_compose = (ROOT / "compose.pilot.yaml").read_text(encoding="utf-8")
+    assert pilot_compose.count("ports: !reset []") == 2
+    assert pilot_compose.count("volumes: !reset []") == 3
+    assert "app.seed" not in pilot_compose and "--reload" not in pilot_compose
+    gateway = (ROOT / "infra" / "nginx" / "recupera.conf").read_text(
+        encoding="utf-8"
+    )
+    assert "X-Frame-Options DENY" in gateway
+    assert "frame-ancestors 'none'" in gateway
+    assert "proxy_set_header X-Request-ID $request_id" in gateway
+    lock = json.loads((ROOT / "web" / "package-lock.json").read_text(encoding="utf-8"))
+    assert lock["lockfileVersion"] == 3
+    assert lock["packages"]["node_modules/next"]["version"]
+    generator_path = ROOT / "scripts" / "generate_dependency_inventory.py"
+    spec = importlib.util.spec_from_file_location("dependency_inventory", generator_path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    assert (ROOT / "release" / "dependency-inventory.json").read_bytes() == (
+        module.serialized_inventory()
+    )
+    verifier = (ROOT / "scripts" / "verify-local-release.ps1").read_text(
+        encoding="utf-8"
+    )
+    assert "generate_dependency_inventory.py --check" in verifier
+    assert "compose.pilot.yaml" in verifier
+    assert (ROOT / "docs" / "post-plan" / "modelo-amenazas.md").is_file()
+    assert (ROOT / "docs" / "post-plan" / "estado-9.1.md").is_file()
+
+
 def check_pilot_metrics_calculation() -> None:
     client_id = uuid.uuid4()
     payer_id = uuid.uuid4()
@@ -1176,6 +1239,7 @@ def main() -> None:
         check_phase7_pilot_operations_assets,
         check_phase8_final_report_assets,
         check_phase8_release_readiness_assets,
+        check_post_plan_hardening_assets,
         check_pilot_metrics_calculation,
         check_client_portal_calculation,
         check_workflow_rules,

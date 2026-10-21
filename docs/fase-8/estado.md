@@ -57,6 +57,8 @@ Guía de uso y verificación: `docs/fase-8/paquete-postulacion.md`.
 
 Documentos: `checklist-go-live.md`, `release-rollback.md`, `handoff-operativo.md` y `pendientes-externos.md`.
 
+El trabajo local posterior continúa en `docs/post-plan/estado-9.1.md`; no altera las ocho fases ni convierte los bloqueos externos en tareas completadas.
+
 Documento de continuidad: `docs/fase-8/backlog-posterior.md`.
 
 ## Límites deliberados
@@ -76,7 +78,7 @@ La funcionalidad permite cerrar el informe, pero los datos sintéticos no valida
 ## Validación local
 
 - Compilación Python aprobada para aplicación, pruebas y scripts.
-- 28 comprobaciones offline aprobadas, incluidas migración `0015`, escenarios económicos, backlog, contratos de cierre G4, paquete determinista y contrato de release 0.8.4.
+- 29 comprobaciones offline aprobadas, incluidas migración `0015`, escenarios económicos, backlog, cierre G4, paquete determinista, release 0.8.4 y endurecimiento post-plan.
 - Build de producción Next.js aprobado usando la imagen local `recupera-web:phase7-4` y los archivos de Fase 8.3 montados sin red.
 - Esquema completo de 37 tablas creado en PostgreSQL 16 dentro de una base desechable.
 - Trigger de cierre probado en PostgreSQL: bloquea cambios de evidencia, segunda decisión y borrado; permite únicamente la primera transición válida a `decided`.

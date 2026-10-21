@@ -1,0 +1,32 @@
+services:
+  db:
+    ports: !reset []
+    restart: unless-stopped
+
+  minio:
+    ports: !reset []
+    restart: unless-stopped
+
+  api:
+    environment:
+      APP_VERSION: ${APP_VERSION:?APP_VERSION is required}
+      ENVIRONMENT: pilot
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+    command: sh -c "alembic upgrade head && python -m app.encrypt_documents && uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers"
+    volumes: !reset []
+    restart: unless-stopped
+
+  worker:
+    environment:
+      APP_VERSION: ${APP_VERSION:?APP_VERSION is required}
+      ENVIRONMENT: pilot
+    volumes: !reset []
+    restart: unless-stopped
+
+  web:
+    command: sh -c "npm run build && npm run start -- --hostname 0.0.0.0"
+    volumes: !reset []
+    restart: unless-stopped
+
+  gateway:
+    restart: unless-stopped

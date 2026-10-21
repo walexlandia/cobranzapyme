@@ -166,6 +166,14 @@ El incremento 8.4 cierra la preparación técnica local:
 - procedimiento de rollback, handoff RACI y registro de bloqueos externos;
 - regla explícita de NO-GO mientras falten infraestructura, autorizaciones, pymes y piloto real.
 
+El bloque post-plan 9.1 agrega QA y endurecimiento sin declarar una novena fase del plan:
+
+- configuración fail-fast para piloto/producción y CORS explícito;
+- request ID universal y cabeceras HTTP defensivas;
+- Compose de piloto sin seed, reload, bind mounts ni puertos directos de datos;
+- lockfile web e inventario determinista de dependencias y contenedores;
+- comando único de regresión local y modelo de amenazas con riesgos residuales.
+
 ## Servicios
 
 - `db`: PostgreSQL 16.
@@ -191,9 +199,12 @@ El repositorio incluye un camino explícito para equipos con firewall restrictiv
 ```powershell
 python scripts\offline_checks.py
 python scripts\release_readiness.py
+python scripts\generate_dependency_inventory.py --check
 python scripts\generate_phase5_evaluation_fixture.py
 docker build --network=none -f web/Dockerfile.offline -t recupera-web:offline web
 ```
+
+La regresión ampliada puede ejecutarse con `scripts\verify-local-release.ps1`; acepta una imagen web local y un ensayo opcional de restauración.
 
 `Dockerfile.offline` reutiliza una imagen Next.js que ya existe en este equipo. Es un recurso local de desarrollo; el artefacto portable sigue siendo `web/Dockerfile`.
 
