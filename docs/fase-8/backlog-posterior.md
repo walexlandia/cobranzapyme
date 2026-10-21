@@ -2,6 +2,8 @@
 
 > Estado: orden provisional para datos sintéticos. El snapshot decidido conserva el orden definitivo calculado con evidencia autorizada.
 
+La ejecución de estas prioridades se rige por `docs/post-plan/plan-mejora-fases.md`. Una prioridad no autoriza por sí sola una funcionalidad: primero debe superar la regla de admisión y la puerta de su fase.
+
 ## Regla de orden
 
 El informe asigna prioridad por riesgo de negocio, no por facilidad técnica:

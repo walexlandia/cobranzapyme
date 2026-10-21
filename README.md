@@ -256,5 +256,6 @@ Los CSV listos para importar están en `data/demo/imports`. Incluyen tres pymes 
 - `docs/fase-7/estado.md`: cierre local de vista cliente, documentos, métricas y operación demostrable del piloto asistido.
 - `docs/fase-8/estado.md`: informe final, decisión formal G4 y paquete verificable de postulación.
 - `docs/post-plan/`: endurecimiento, observabilidad, runbook y panel administrativo posteriores al plan original.
+- `docs/post-plan/plan-mejora-fases.md`: fases PM-0 a PM-6, métricas y puertas que controlan todo desarrollo posterior.
 - `examples/`: archivos de facturas y contactos para probar las importaciones.
 

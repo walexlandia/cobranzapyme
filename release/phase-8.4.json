@@ -42,7 +42,8 @@
     "docs/post-plan/estado-9.1.md",
     "docs/post-plan/runbook-observabilidad.md",
     "docs/post-plan/estado-9.2.md",
-    "docs/post-plan/estado-9.3.md"
+    "docs/post-plan/estado-9.3.md",
+    "docs/post-plan/plan-mejora-fases.md"
   ],
   "external_gates": [
     {

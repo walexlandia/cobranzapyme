@@ -24,7 +24,7 @@ Este bloque no crea una novena fase del plan original. Expone en la interfaz adm
 - El administrador visualizó estado saludable, cero alertas, worker disponible y telemetría agregada.
 - El botón `Actualizar ahora` aumentó el contador de solicitudes de 40 a 41.
 - Un usuario cliente autenticado no recibió la opción `Salud`.
-- 31 comprobaciones offline aprobadas.
+- 32 comprobaciones offline aprobadas, incluido el control estructural del plan de mejora posterior.
 - 71 pruebas HTTP/ORM aprobadas sobre PostgreSQL 16.
 - Build de producción Next.js aprobado sin descargar dependencias.
 

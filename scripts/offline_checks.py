@@ -1045,6 +1045,24 @@ def check_post_plan_operations_ui_assets() -> None:
     assert (ROOT / "docs" / "post-plan" / "estado-9.3.md").is_file()
 
 
+def check_post_plan_improvement_plan() -> None:
+    plan = (
+        ROOT / "docs" / "post-plan" / "plan-mejora-fases.md"
+    ).read_text(encoding="utf-8")
+    for phase in range(7):
+        assert f"PM-{phase}" in plan
+    for gate in range(6):
+        assert f"PM-G{gate}" in plan
+    assert "Regla obligatoria de admisión" in plan
+    assert "Siguiente fase" in plan
+    assert "No autorizado en esta fase" in plan
+    assert "bloqueada por dependencias externas" in plan
+    posterior = (
+        ROOT / "docs" / "fase-8" / "backlog-posterior.md"
+    ).read_text(encoding="utf-8")
+    assert "plan-mejora-fases.md" in posterior
+
+
 def check_pilot_metrics_calculation() -> None:
     client_id = uuid.uuid4()
     payer_id = uuid.uuid4()
@@ -1311,6 +1329,7 @@ def main() -> None:
         check_post_plan_hardening_assets,
         check_post_plan_observability_assets,
         check_post_plan_operations_ui_assets,
+        check_post_plan_improvement_plan,
         check_pilot_metrics_calculation,
         check_client_portal_calculation,
         check_workflow_rules,
