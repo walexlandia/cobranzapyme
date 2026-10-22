@@ -458,6 +458,11 @@ def seed() -> None:
             case = db.scalar(
                 select(ExceptionCase).where(ExceptionCase.message_id == inbound.id)
             )
+            if case is not None:
+                # The demo dataset explicitly declares zero operator effort so that a
+                # measured zero is distinguishable from a missing legacy value.
+                case.human_minutes = Decimal("0")
+                case.human_minutes_measured = True
             if case is not None and not (case.detail or {}).get("client_escalation"):
                 escalated_at = datetime.now(timezone.utc)
                 case.priority = 100
@@ -518,6 +523,8 @@ def seed() -> None:
                     )
                 )
                 if existing_entry is not None:
+                    existing_entry.human_minutes_measured = True
+                    existing_entry.labor_accounting = "additional"
                     continue
                 closed = entry_type != "incident"
                 entry = PilotLogEntry(
@@ -530,6 +537,8 @@ def seed() -> None:
                     status="resolved" if closed else "open",
                     occurred_on=date.today() - timedelta(days=client_index + 1),
                     human_minutes=minutes,
+                    human_minutes_measured=True,
+                    labor_accounting="additional",
                     created_by=admin.id,
                     resolved_by=admin.id if closed else None,
                     resolved_at=datetime.now(timezone.utc) if closed else None,

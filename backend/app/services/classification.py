@@ -405,6 +405,7 @@ def review_exception(
     exception.classification_id = decision.id
     exception.assigned_to = actor_id
     exception.human_minutes += human_minutes
+    exception.human_minutes_measured = True
     exception.status = "resolved"
     exception.resolved_at = datetime.now(timezone.utc)
     exception.resolution = {

@@ -4,7 +4,7 @@
 
 - Versión de preparación: `0.8.4`.
 - Contrato legible por máquina: `release/phase-8.4.json`.
-- Cabeza de base de datos: `0017`.
+- Cabeza de base de datos: `0018`.
 - Esquema de informe: `fase-8.2-v1`.
 - Esquema del paquete: `fase-8.3-v1`.
 

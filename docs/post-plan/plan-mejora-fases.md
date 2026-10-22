@@ -11,7 +11,7 @@ La nomenclatura `PM` significa **Plan de Mejora** y evita confundir estas fases 
 | Fase | Propósito | Estado actual | Fuente principal |
 |---|---|---|---|
 | PM-0 | Base segura, observable y medible | Completa localmente | E12, métricas del piloto y bloques 9.1–9.3 |
-| PM-1 | Diagnosticar el costo humano | Instrumentada localmente; gate provisional | Prioridad 1 del backlog posterior |
+| PM-1 | Diagnosticar el costo humano | Completa localmente; PM-G1 externo pendiente | Prioridad 1 del backlog posterior |
 | PM-2 | Optimizar un flujo humano comprobado | Bloqueada por PM-G1 | E7, E8 y prioridad 1 |
 | PM-3 | Fortalecer comparables y atribución | Pendiente de PM-2 | E9, E11 y prioridad 2 |
 | PM-4 | Automatizar un bloqueo documental probado | Bloqueada por evidencia real | Épica P y prioridad 3 |
@@ -66,7 +66,7 @@ Si falta cualquiera de estos elementos, la tarea permanece como hipótesis y no 
 
 **Puerta PM-G1:** existe una línea base reproducible y un solo problema seleccionado que explica una parte material del costo humano. Si los datos no distinguen un cuello de botella, se mejora la medición y no se desarrolla una funcionalidad.
 
-**Estado local al 2026-10-21:** el instrumento reproducible quedó implementado y ejecutado sobre el seed. La muestra sintética registra 84 minutos: `pilot_log:manual_work` concentra 54 minutos (64,29%), seguido por incidentes con 18 y decisiones con 12. La oportunidad es provisional y su objetivo condicionado sería reducir al menos 20%, de 54 a no más de 43,2 minutos en una muestra comparable. La puerta permanece en `provisional_synthetic`: no autoriza PM-2. La migración `0017` incorpora minutos obligatorios en nuevas decisiones de conciliación para cerrar una brecha encontrada durante el diagnóstico; el tiempo de ciclo continúa separado del esfuerzo humano.
+**Estado local al 2026-10-22:** PM-1 está completa en alcance técnico y documental. El instrumento reproducible se ejecutó sobre el seed y la muestra sintética registra 84 minutos: `pilot_log:manual_work` concentra 54 minutos (64,29%), seguido por incidentes con 18 y decisiones con 12. La oportunidad seleccionada tiene como objetivo condicionado reducir al menos 20%, de 54 a no más de 43,2 minutos en una muestra comparable. La migración `0017` incorpora minutos obligatorios en nuevas decisiones de conciliación y la `0018` distingue cero medido de dato omitido, vincula trabajo ya incluido en excepciones y evita doble conteo. Las reaperturas son cero por diseño porque un caso resuelto es inmutable y una recurrencia crea un caso nuevo. La muestra no presenta brechas internas, pero PM-G1 permanece en `provisional_synthetic` porque falta evidencia real autorizada; por ello PM-2 continúa bloqueada.
 
 ## PM-2 — Optimización del flujo seleccionado
 

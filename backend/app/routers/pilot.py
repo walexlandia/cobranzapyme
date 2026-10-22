@@ -19,6 +19,7 @@ from app.models import (
     Contact,
     Contract,
     Document,
+    ExceptionCase,
     Invoice,
     MessageTemplate,
     PilotAuthorizationEvent,
@@ -349,11 +350,29 @@ def create_pilot_log_entry(
         )
         if invoice is None:
             raise HTTPException(status_code=404, detail="Factura relacionada no encontrada")
+    if payload.related_exception_id is not None:
+        related_exception = db.scalar(
+            select(ExceptionCase).where(
+                ExceptionCase.id == payload.related_exception_id,
+                ExceptionCase.client_id == payload.client_id,
+            )
+        )
+        if related_exception is None:
+            raise HTTPException(status_code=404, detail="Excepción relacionada no encontrada")
+        if (
+            payload.related_invoice_id is not None
+            and related_exception.invoice_id != payload.related_invoice_id
+        ):
+            raise HTTPException(
+                status_code=409,
+                detail="La excepción no pertenece a la factura relacionada",
+            )
     created_at = datetime.now(timezone.utc)
     immediately_closed = payload.entry_type != "incident"
     entry = PilotLogEntry(
         client_id=payload.client_id,
         related_invoice_id=payload.related_invoice_id,
+        related_exception_id=payload.related_exception_id,
         entry_type=payload.entry_type,
         severity=payload.severity,
         title=payload.title.strip(),
@@ -361,6 +380,8 @@ def create_pilot_log_entry(
         status="resolved" if immediately_closed else "open",
         occurred_on=payload.occurred_on,
         human_minutes=payload.human_minutes,
+        human_minutes_measured=True,
+        labor_accounting=payload.labor_accounting,
         created_by=user.id,
         resolved_by=user.id if immediately_closed else None,
         resolved_at=created_at if immediately_closed else None,
@@ -383,6 +404,11 @@ def create_pilot_log_entry(
             "title": entry.title,
             "occurred_on": entry.occurred_on.isoformat(),
             "human_minutes": str(entry.human_minutes),
+            "human_minutes_measured": entry.human_minutes_measured,
+            "labor_accounting": entry.labor_accounting,
+            "related_exception_id": (
+                str(entry.related_exception_id) if entry.related_exception_id else None
+            ),
             "status": entry.status,
         },
     )

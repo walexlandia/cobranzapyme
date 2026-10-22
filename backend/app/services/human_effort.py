@@ -25,7 +25,7 @@ from app.models import (
     ReconciliationProposal,
 )
 
-REPORT_SCHEMA_VERSION = "pm-1-v1"
+REPORT_SCHEMA_VERSION = "pm-1-v2"
 MIN_CASES_FOR_SELECTION = 3
 MIN_MEASUREMENT_COVERAGE_PERCENT = Decimal("80")
 MIN_MATERIAL_SHARE_PERCENT = Decimal("20")
@@ -111,12 +111,12 @@ def _workstream_row(
     date_to_at: datetime,
     all_minutes: Decimal,
 ) -> dict[str, Any]:
-    positive_minutes = [
-        Decimal(item.human_minutes or 0) for item in cases if item.human_minutes > 0
+    measured_minutes = [
+        Decimal(item.human_minutes or 0)
+        for item in cases
+        if item.human_minutes_measured
     ]
-    total_minutes = sum(
-        (Decimal(item.human_minutes or 0) for item in cases), Decimal("0")
-    )
+    total_minutes = sum(measured_minutes, Decimal("0"))
     client_counts = Counter(item.client_id for item in cases)
     invoice_ids = {
         item.invoice_id if source == "exception" else item.related_invoice_id
@@ -144,27 +144,34 @@ def _workstream_row(
         "source": source,
         "category": category,
         "case_count": len(cases),
-        "measured_case_count": len(positive_minutes),
-        "measurement_coverage_percent": _percent(len(positive_minutes), len(cases)),
+        "measured_case_count": len(measured_minutes),
+        "measurement_coverage_percent": _percent(len(measured_minutes), len(cases)),
         "total_human_minutes": _decimal(total_minutes),
         "average_minutes_per_case": _decimal(total_minutes / len(cases))
         if cases
         else None,
-        "median_minutes_per_measured_case": _median(positive_minutes),
+        "median_minutes_per_measured_case": _median(measured_minutes),
         "human_minutes_share_percent": _percent(total_minutes, all_minutes),
         "open_cases": status_counts.get("open", 0),
         "resolved_cases": status_counts.get("resolved", 0),
         "average_resolution_hours": _average(durations),
         "oldest_open_hours": max(open_ages) if open_ages else None,
         "distinct_invoices": len(invoice_ids),
-        "repeat_cases_on_same_invoice": max(len(cases) - len(invoice_ids), 0),
+        "repeat_cases_on_same_invoice": sum(
+            count - 1
+            for invoice_id, count in Counter(
+                item.invoice_id if source == "exception" else item.related_invoice_id
+                for item in cases
+            ).items()
+            if invoice_id is not None and count > 1
+        ),
         "client_concentration_percent": _percent(
             max(client_counts.values()), len(cases)
         ),
         "selection_eligible": (
             len(cases) >= MIN_CASES_FOR_SELECTION
-            and _percent(len(positive_minutes), len(cases)) is not None
-            and _percent(len(positive_minutes), len(cases))
+            and _percent(len(measured_minutes), len(cases)) is not None
+            and _percent(len(measured_minutes), len(cases))
             >= MIN_MEASUREMENT_COVERAGE_PERCENT
             and total_minutes > 0
         ),
@@ -276,11 +283,17 @@ def build_human_effort_diagnostic(
         if item.related_invoice_id is not None
     )
 
+    measured_exceptions = [item for item in exceptions if item.human_minutes_measured]
+    countable_log_entries = [
+        item
+        for item in log_entries
+        if item.human_minutes_measured and item.labor_accounting == "additional"
+    ]
     exception_minutes = sum(
-        (Decimal(item.human_minutes or 0) for item in exceptions), Decimal("0")
+        (Decimal(item.human_minutes or 0) for item in measured_exceptions), Decimal("0")
     )
     log_minutes = sum(
-        (Decimal(item.human_minutes or 0) for item in log_entries), Decimal("0")
+        (Decimal(item.human_minutes or 0) for item in countable_log_entries), Decimal("0")
     )
     decided_proposals = [
         item
@@ -299,7 +312,7 @@ def build_human_effort_diagnostic(
     for item in exceptions:
         exception_groups[_safe_category(item.kind, KNOWN_EXCEPTION_KINDS)].append(item)
     log_groups: dict[str, list[PilotLogEntry]] = defaultdict(list)
-    for item in log_entries:
+    for item in countable_log_entries:
         log_groups[item.entry_type].append(item)
 
     ranking = [
@@ -474,9 +487,12 @@ def build_human_effort_diagnostic(
         authorized_client_ids == selected_client_ids
     )
     analytical_ready = selected is not None
-    selection_measurement_blockers = []
-    if selected is not None and selected["source"] == "pilot_log":
-        selection_measurement_blockers.append("possible_source_overlap")
+    selection_measurement_blockers: list[str] = []
+    if (
+        selected is not None
+        and Decimal(selected["measurement_coverage_percent"] or 0) < Decimal("100")
+    ):
+        selection_measurement_blockers.append("incomplete_selected_measurement")
     if not analytical_ready:
         gate_status = "needs_measurement"
         gate_reason = (
@@ -492,8 +508,8 @@ def build_human_effort_diagnostic(
     elif selection_measurement_blockers:
         gate_status = "measurement_gaps"
         gate_reason = (
-            "La oportunidad parece material, pero todavía puede solaparse con trabajo "
-            "registrado en otra fuente. Se debe resolver la medición antes de PM-2."
+            "La oportunidad parece material, pero todavía contiene casos sin medición "
+            "confirmada. Se debe completar la muestra antes de PM-2."
         )
     elif not authorization_complete:
         gate_status = "authorization_incomplete"
@@ -545,41 +561,48 @@ def build_human_effort_diagnostic(
             },
         }
 
-    if measured_proposals and len(measured_proposals) == len(decided_proposals):
+    if not decided_proposals:
+        reconciliation_measurement_status = "not_applicable"
+    elif measured_proposals and len(measured_proposals) == len(decided_proposals):
         reconciliation_measurement_status = "available"
     elif measured_proposals:
         reconciliation_measurement_status = "partial"
     else:
         reconciliation_measurement_status = "unavailable"
-    measurement_gaps = [
-        {
-            "key": "zero_minutes_ambiguity",
-            "impact": "Un valor cero no distingue trabajo nulo de medición omitida.",
-            "required_measurement": (
-                "Distinguir explícitamente sin medición de cero minutos en excepciones "
-                "y bitácora."
-            ),
-        },
-        {
-            "key": "reopenings_history",
-            "impact": "No existe historial estructurado para contar reaperturas.",
-            "required_measurement": (
-                "Registrar una transición auditable si se habilitan reaperturas."
-            ),
-        },
-        {
-            "key": "possible_source_overlap",
-            "impact": (
-                "La bitácora manual puede describir trabajo ya contabilizado en excepciones."
-            ),
-            "required_measurement": (
-                "Vincular cada registro manual a un caso o marcarlo como adicional."
-            ),
-        },
-    ]
-    if reconciliation_measurement_status != "available":
-        measurement_gaps.insert(
-            0,
+    measurement_gaps: list[dict[str, str]] = []
+    unmeasured_exception_count = len(exceptions) - len(measured_exceptions)
+    unmeasured_log_count = sum(not item.human_minutes_measured for item in log_entries)
+    unclassified_log_count = sum(
+        item.labor_accounting is None for item in log_entries if item.human_minutes_measured
+    )
+    if unmeasured_exception_count or unmeasured_log_count:
+        measurement_gaps.append(
+            {
+                "key": "unmeasured_human_minutes",
+                "impact": (
+                    f"Hay {unmeasured_exception_count} excepciones y {unmeasured_log_count} "
+                    "registros de bitácora heredados sin confirmación de medición."
+                ),
+                "required_measurement": (
+                    "Excluirlos de la línea base o completar una medición verificable."
+                ),
+            }
+        )
+    if unclassified_log_count:
+        measurement_gaps.append(
+            {
+                "key": "unclassified_labor_accounting",
+                "impact": (
+                    f"Hay {unclassified_log_count} registros medidos sin clasificación "
+                    "de contabilización."
+                ),
+                "required_measurement": (
+                    "Marcar cada registro como trabajo adicional o incluido en una excepción."
+                ),
+            }
+        )
+    if reconciliation_measurement_status in {"partial", "unavailable"}:
+        measurement_gaps.append(
             {
                 "key": "reconciliation_labor_minutes",
                 "impact": (
@@ -603,6 +626,7 @@ def build_human_effort_diagnostic(
             "managed_invoices": len(managed_invoice_ids),
             "exception_cases": len(exceptions),
             "pilot_log_entries": len(log_entries),
+            "countable_pilot_log_entries": len(countable_log_entries),
             "reconciliation_proposals": len(proposals),
         },
         "baseline": {
@@ -624,7 +648,11 @@ def build_human_effort_diagnostic(
                 "Mensajes manuales, clasificaciones humanas, decisiones de conciliación "
                 "y entradas de bitácora frente a sus equivalentes automáticos observados."
             ),
-            "reopenings": None,
+            "reopenings": 0,
+            "reopening_measurement_status": "not_applicable",
+            "reopening_policy": (
+                "Los casos resueltos son inmutables; una recurrencia crea un caso nuevo."
+            ),
         },
         "breakdowns": {
             "exception_decisions": dict(sorted(decision_counts.items())),
@@ -670,6 +698,7 @@ def build_human_effort_diagnostic(
                 "complete": authorization_complete,
             },
             "selection_measurement_blockers": selection_measurement_blockers,
+            "measurement_complete": not measurement_gaps,
         },
         "privacy": {
             "aggregate_only": True,
@@ -770,7 +799,11 @@ def human_effort_markdown(report: dict[str, Any]) -> bytes:
         f"- Minutos en bitácora: {report['baseline']['pilot_log_human_minutes']}",
         f"- Minutos en conciliación: {report['baseline']['reconciliation_human_minutes']}",
         f"- Porcentaje de acciones manuales observadas: {_display(report['baseline']['manual_action_percent'], 'sin muestra')}%",
-        "- Reaperturas: no medibles con el modelo actual.",
+        (
+            f"- Reaperturas: {report['baseline']['reopenings']} "
+            f"({report['baseline']['reopening_measurement_status']}; "
+            "los casos resueltos son inmutables)."
+        ),
         "",
         "## Ranking de fricciones",
         "",
@@ -824,8 +857,11 @@ def human_effort_markdown(report: dict[str, Any]) -> bytes:
             ]
         )
     lines.extend(["", "## Brechas de medición", ""])
-    for gap in report["measurement_gaps"]:
-        lines.append(f"- `{gap['key']}`: {gap['impact']} {gap['required_measurement']}")
+    if report["measurement_gaps"]:
+        for gap in report["measurement_gaps"]:
+            lines.append(f"- `{gap['key']}`: {gap['impact']} {gap['required_measurement']}")
+    else:
+        lines.append("- Sin brechas internas en la muestra analizada.")
     lines.extend(
         [
             "",

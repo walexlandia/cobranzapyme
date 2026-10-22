@@ -176,6 +176,7 @@ def _case_view(db: Session, case: ExceptionCase, *, full: bool) -> ExceptionCase
         priority=case.priority,
         detail=case.detail,
         human_minutes=case.human_minutes,
+        human_minutes_measured=case.human_minutes_measured,
         resolved_at=case.resolved_at,
         resolution=case.resolution,
         created_at=case.created_at,

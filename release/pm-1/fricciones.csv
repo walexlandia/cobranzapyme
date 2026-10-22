@@ -1,5 +1,5 @@
 ﻿schema_version,date_from,date_to,rank,source,category,case_count,measured_case_count,measurement_coverage_percent,total_human_minutes,average_minutes_per_case,human_minutes_share_percent,open_cases,resolved_cases,average_resolution_hours,oldest_open_hours,distinct_invoices,repeat_cases_on_same_invoice,client_concentration_percent,selection_eligible
-pm-1-v1,2026-07-01,2026-10-21,1,pilot_log,manual_work,3,3,100.00,54.00,18.00,64.29,0,3,0.00,,3,0,33.33,True
-pm-1-v1,2026-07-01,2026-10-21,2,pilot_log,incident,3,3,100.00,18.00,6.00,21.43,3,0,,4.33,3,0,33.33,True
-pm-1-v1,2026-07-01,2026-10-21,3,pilot_log,decision,3,3,100.00,12.00,4.00,14.29,0,3,0.00,,3,0,33.33,True
-pm-1-v1,2026-07-01,2026-10-21,4,exception,low_confidence,3,0,0.00,0.00,0.00,0.00,3,0,,4.33,3,0,33.33,False
+pm-1-v2,2026-07-01,2026-10-22,1,pilot_log,manual_work,3,3,100.00,54.00,18.00,64.29,0,3,0.00,,3,0,33.33,True
+pm-1-v2,2026-07-01,2026-10-22,2,pilot_log,incident,3,3,100.00,18.00,6.00,21.43,3,0,,9.01,3,0,33.33,True
+pm-1-v2,2026-07-01,2026-10-22,3,pilot_log,decision,3,3,100.00,12.00,4.00,14.29,0,3,0.00,,3,0,33.33,True
+pm-1-v2,2026-07-01,2026-10-22,4,exception,low_confidence,3,3,100.00,0.00,0.00,0.00,3,0,,9.01,3,0,33.33,False

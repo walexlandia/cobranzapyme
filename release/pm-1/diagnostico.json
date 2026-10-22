@@ -8,7 +8,9 @@
     "minutes_per_managed_invoice": "0.93",
     "pilot_log_human_minutes": "84.00",
     "reconciliation_human_minutes": "0.00",
-    "reopenings": null,
+    "reopening_measurement_status": "not_applicable",
+    "reopening_policy": "Los casos resueltos son inmutables; una recurrencia crea un caso nuevo.",
+    "reopenings": 0,
     "total_human_minutes": "84.00"
   },
   "breakdowns": {
@@ -28,9 +30,9 @@
     }
   },
   "date_from": "2026-07-01",
-  "date_to": "2026-10-21",
+  "date_to": "2026-10-22",
   "evidence_kind": "synthetic",
-  "fingerprint_sha256": "6c174b95d9d845b51da5969296875b9c4d5eec84d6ab973aa887c6360a4ec9b3",
+  "fingerprint_sha256": "23c4667c2a933ae01b91bf270e12341d0a43eb3376c7834ec68f3c6b6af7f3ed",
   "friction_ranking": [
     {
       "average_minutes_per_case": "18.00",
@@ -65,7 +67,7 @@
       "measured_case_count": 3,
       "measurement_coverage_percent": "100.00",
       "median_minutes_per_measured_case": "6.00",
-      "oldest_open_hours": "4.33",
+      "oldest_open_hours": "9.01",
       "open_cases": 3,
       "rank": 2,
       "repeat_cases_on_same_invoice": 0,
@@ -104,10 +106,10 @@
       "distinct_invoices": 3,
       "human_minutes_share_percent": "0.00",
       "key": "exception:low_confidence",
-      "measured_case_count": 0,
-      "measurement_coverage_percent": "0.00",
-      "median_minutes_per_measured_case": null,
-      "oldest_open_hours": "4.33",
+      "measured_case_count": 3,
+      "measurement_coverage_percent": "100.00",
+      "median_minutes_per_measured_case": "0.00",
+      "oldest_open_hours": "9.01",
       "open_cases": 3,
       "rank": 4,
       "repeat_cases_on_same_invoice": 0,
@@ -117,29 +119,8 @@
       "total_human_minutes": "0.00"
     }
   ],
-  "measurement_gaps": [
-    {
-      "impact": "La muestra todavía no permite comparar completamente el costo humano de conciliación con otros flujos.",
-      "key": "reconciliation_labor_minutes",
-      "required_measurement": "Registrar minutos de revisión al decidir cada propuesta nueva."
-    },
-    {
-      "impact": "Un valor cero no distingue trabajo nulo de medición omitida.",
-      "key": "zero_minutes_ambiguity",
-      "required_measurement": "Distinguir explícitamente sin medición de cero minutos en excepciones y bitácora."
-    },
-    {
-      "impact": "No existe historial estructurado para contar reaperturas.",
-      "key": "reopenings_history",
-      "required_measurement": "Registrar una transición auditable si se habilitan reaperturas."
-    },
-    {
-      "impact": "La bitácora manual puede describir trabajo ya contabilizado en excepciones.",
-      "key": "possible_source_overlap",
-      "required_measurement": "Vincular cada registro manual a un caso o marcarlo como adicional."
-    }
-  ],
-  "period_days": 113,
+  "measurement_gaps": [],
+  "period_days": 114,
   "pm_g1": {
     "analytical_ready": true,
     "authorization_coverage": {
@@ -147,11 +128,10 @@
       "complete": false,
       "participating_clients": 3
     },
+    "measurement_complete": true,
     "pm2_authorized": false,
     "reason": "La medición distingue una oportunidad, pero la evidencia sintética no aprueba PM-G1 ni autoriza cambios operativos de PM-2.",
-    "selection_measurement_blockers": [
-      "possible_source_overlap"
-    ],
+    "selection_measurement_blockers": [],
     "status": "provisional_synthetic",
     "thresholds": {
       "minimum_cases": 3,
@@ -174,7 +154,7 @@
     "average_decision_cycle_hours": null,
     "decision_count": 0,
     "human_minutes": null,
-    "labor_measurement_status": "unavailable",
+    "labor_measurement_status": "not_applicable",
     "measured_decision_count": 0,
     "measurement_coverage_percent": null,
     "median_decision_cycle_hours": null,
@@ -182,9 +162,10 @@
     "proposal_count": 0,
     "status_counts": {}
   },
-  "schema_version": "pm-1-v1",
+  "schema_version": "pm-1-v2",
   "scope": {
     "active_clients": 3,
+    "countable_pilot_log_entries": 9,
     "exception_cases": 3,
     "managed_invoices": 90,
     "pilot_log_entries": 9,

@@ -848,6 +848,7 @@ class ExceptionCaseView(BaseModel):
     priority: int
     detail: dict
     human_minutes: Decimal
+    human_minutes_measured: bool
     resolved_at: datetime | None
     resolution: dict
     created_at: datetime
@@ -865,7 +866,7 @@ class ExceptionReviewCommand(BaseModel):
     client_id: uuid.UUID
     category: ClassificationCategory
     extracted_data: dict = Field(default_factory=dict)
-    human_minutes: Decimal = Field(default=Decimal("0"), ge=0, le=480)
+    human_minutes: Decimal = Field(ge=0, le=480)
     note: str | None = Field(default=None, max_length=2000)
     checklist_updates: list[ChecklistCorrection] = Field(default_factory=list, max_length=30)
     workflow_stage: Literal[
@@ -1120,8 +1121,18 @@ class PilotLogCreate(BaseModel):
     title: str = Field(min_length=3, max_length=200)
     detail: str = Field(min_length=3, max_length=4000)
     occurred_on: date
-    human_minutes: Decimal = Field(default=Decimal("0"), ge=0, le=1440)
+    human_minutes: Decimal = Field(ge=0, le=1440)
+    labor_accounting: Literal["additional", "included_in_exception"]
     related_invoice_id: uuid.UUID | None = None
+    related_exception_id: uuid.UUID | None = None
+
+    @model_validator(mode="after")
+    def validate_labor_accounting(self) -> "PilotLogCreate":
+        if self.labor_accounting == "included_in_exception" and self.related_exception_id is None:
+            raise ValueError(
+                "related_exception_id es obligatorio cuando los minutos ya están incluidos en una excepción"
+            )
+        return self
 
 
 class PilotLogResolve(BaseModel):
@@ -1135,6 +1146,7 @@ class PilotLogEntryView(BaseModel):
     id: uuid.UUID
     client_id: uuid.UUID
     related_invoice_id: uuid.UUID | None
+    related_exception_id: uuid.UUID | None
     entry_type: str
     severity: str
     title: str
@@ -1142,6 +1154,8 @@ class PilotLogEntryView(BaseModel):
     status: str
     occurred_on: date
     human_minutes: Decimal
+    human_minutes_measured: bool
+    labor_accounting: str | None
     created_by: uuid.UUID
     resolved_by: uuid.UUID | None
     resolved_at: datetime | None

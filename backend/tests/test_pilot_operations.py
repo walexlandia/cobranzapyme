@@ -37,6 +37,7 @@ def test_operator_records_resolves_and_filters_pilot_log(
         "detail": "Incidencia sintética sin entrega externa.",
         "occurred_on": "2026-10-19",
         "human_minutes": "12.5",
+        "labor_accounting": "additional",
     }
 
     created = client.post("/api/v1/pilot/log", json=payload, headers=admin_headers)
@@ -44,6 +45,17 @@ def test_operator_records_resolves_and_filters_pilot_log(
     assert created.status_code == 201
     assert created.json()["status"] == "open"
     assert created.json()["human_minutes"] == "12.50"
+    assert created.json()["human_minutes_measured"] is True
+    assert created.json()["labor_accounting"] == "additional"
+    without_accounting = {key: value for key, value in payload.items() if key != "labor_accounting"}
+    assert client.post(
+        "/api/v1/pilot/log", json=without_accounting, headers=admin_headers
+    ).status_code == 422
+    assert client.post(
+        "/api/v1/pilot/log",
+        json={**payload, "labor_accounting": "included_in_exception"},
+        headers=admin_headers,
+    ).status_code == 422
     entry_id = created.json()["id"]
     assert client.post("/api/v1/pilot/log", json=payload, headers=client_headers).status_code == 403
     open_entries = client.get(

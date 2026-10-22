@@ -301,6 +301,15 @@ class PilotLogEntry(BaseRecord, Base):
             "status IN ('open', 'resolved')",
             name="ck_pilot_log_status",
         ),
+        CheckConstraint(
+            "labor_accounting IS NULL OR labor_accounting IN "
+            "('additional', 'included_in_exception')",
+            name="ck_pilot_log_labor_accounting",
+        ),
+        CheckConstraint(
+            "labor_accounting <> 'included_in_exception' OR related_exception_id IS NOT NULL",
+            name="ck_pilot_log_included_requires_exception",
+        ),
         Index(
             "ix_pilot_log_client_status_occurred",
             "client_id",
@@ -313,6 +322,9 @@ class PilotLogEntry(BaseRecord, Base):
     related_invoice_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("invoices.id"), index=True
     )
+    related_exception_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("exception_cases.id"), index=True
+    )
     entry_type: Mapped[str] = mapped_column(String(30), nullable=False)
     severity: Mapped[str] = mapped_column(String(20), default="info", nullable=False)
     title: Mapped[str] = mapped_column(String(200), nullable=False)
@@ -322,6 +334,8 @@ class PilotLogEntry(BaseRecord, Base):
     human_minutes: Mapped[Decimal] = mapped_column(
         Numeric(10, 2), default=Decimal("0"), nullable=False
     )
+    human_minutes_measured: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    labor_accounting: Mapped[str | None] = mapped_column(String(30))
     created_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
     resolved_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"), index=True)
     resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
@@ -632,6 +646,7 @@ class ExceptionCase(BaseRecord, Base):
     human_minutes: Mapped[Decimal] = mapped_column(
         Numeric(10, 2), default=Decimal("0"), nullable=False
     )
+    human_minutes_measured: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     resolution: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
 

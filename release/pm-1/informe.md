@@ -1,9 +1,9 @@
 # PM-1 — Diagnóstico del costo humano
 
-Período: 2026-07-01 a 2026-10-21 (113 días)
+Período: 2026-07-01 a 2026-10-22 (114 días)
 Tipo de evidencia: synthetic
-Esquema: pm-1-v1
-Huella reproducible SHA-256: `6c174b95d9d845b51da5969296875b9c4d5eec84d6ab973aa887c6360a4ec9b3`
+Esquema: pm-1-v2
+Huella reproducible SHA-256: `23c4667c2a933ae01b91bf270e12341d0a43eb3376c7834ec68f3c6b6af7f3ed`
 
 > Evidencia sintética: permite verificar el instrumento, pero no aprueba PM-G1.
 
@@ -15,7 +15,7 @@ Huella reproducible SHA-256: `6c174b95d9d845b51da5969296875b9c4d5eec84d6ab973aa8
 - Minutos en bitácora: 84.00
 - Minutos en conciliación: 0.00
 - Porcentaje de acciones manuales observadas: 75.00%
-- Reaperturas: no medibles con el modelo actual.
+- Reaperturas: 0 (not_applicable; los casos resueltos son inmutables).
 
 ## Ranking de fricciones
 
@@ -24,7 +24,7 @@ Huella reproducible SHA-256: `6c174b95d9d845b51da5969296875b9c4d5eec84d6ab973aa8
 | 1 | `pilot_log:manual_work` | 3 | 100.00% | 54.00 | 64.29% | 0 | sí |
 | 2 | `pilot_log:incident` | 3 | 100.00% | 18.00 | 21.43% | 3 | sí |
 | 3 | `pilot_log:decision` | 3 | 100.00% | 12.00 | 14.29% | 0 | sí |
-| 4 | `exception:low_confidence` | 3 | 0.00% | 0.00 | 0.00% | 3 | no |
+| 4 | `exception:low_confidence` | 3 | 100.00% | 0.00 | 0.00% | 3 | no |
 
 ## Conciliación
 
@@ -46,10 +46,7 @@ Objetivo PM-2 condicionado: reducir 20% hasta un máximo de 43.20 minutos totale
 
 ## Brechas de medición
 
-- `reconciliation_labor_minutes`: La muestra todavía no permite comparar completamente el costo humano de conciliación con otros flujos. Registrar minutos de revisión al decidir cada propuesta nueva.
-- `zero_minutes_ambiguity`: Un valor cero no distingue trabajo nulo de medición omitida. Distinguir explícitamente sin medición de cero minutos en excepciones y bitácora.
-- `reopenings_history`: No existe historial estructurado para contar reaperturas. Registrar una transición auditable si se habilitan reaperturas.
-- `possible_source_overlap`: La bitácora manual puede describir trabajo ya contabilizado en excepciones. Vincular cada registro manual a un caso o marcarlo como adicional.
+- Sin brechas internas en la muestra analizada.
 
 ## Privacidad
 

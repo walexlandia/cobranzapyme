@@ -109,6 +109,7 @@ def test_pilot_metrics_are_auditable_exportable_and_role_scoped(
                 priority=10,
                 detail={"fixture": True},
                 human_minutes=Decimal("30"),
+                human_minutes_measured=True,
                 resolution={"fixture": True},
                 created_at=created_at,
             ),

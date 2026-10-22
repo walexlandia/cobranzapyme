@@ -533,8 +533,8 @@ def check_migration_chain() -> None:
         if down_revision is not None:
             assert down_revision in revisions, f"Unknown parent {down_revision} in {path.name}"
             heads.discard(down_revision)
-    assert heads == {"0017"}, f"Unexpected migration heads: {sorted(heads)}"
-    current: str | None = "0017"
+    assert heads == {"0018"}, f"Unexpected migration heads: {sorted(heads)}"
+    current: str | None = "0018"
     visited = []
     while current is not None:
         assert current not in visited, f"Migration cycle at {current}"
@@ -891,7 +891,7 @@ def check_phase8_release_readiness_assets() -> None:
     manifest_path = ROOT / "release" / "phase-8.4.json"
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     assert manifest["release"] == "0.8.4"
-    assert manifest["database_migration_head"] == "0017"
+    assert manifest["database_migration_head"] == "0018"
     assert manifest["report_schema_version"] == "fase-8.2-v1"
     assert manifest["package_schema_version"] == "fase-8.3-v1"
     assert all(gate["status"] == "blocked" for gate in manifest["external_gates"])
@@ -923,7 +923,7 @@ def check_phase8_release_readiness_assets() -> None:
     version = (ROOT / "backend" / "app" / "version.py").read_text(encoding="utf-8")
     assert 'router.get("/health/version")' in health
     assert 'APP_VERSION = "0.8.4"' in version
-    assert 'DATABASE_MIGRATION_HEAD = "0017"' in version
+    assert 'DATABASE_MIGRATION_HEAD = "0018"' in version
 
 
 def check_post_plan_hardening_assets() -> None:
@@ -1058,7 +1058,7 @@ def check_post_plan_improvement_plan() -> None:
     for gate in range(6):
         assert f"PM-G{gate}" in plan
     assert "Regla obligatoria de admisión" in plan
-    assert "Instrumentada localmente; gate provisional" in plan
+    assert "Completa localmente; PM-G1 externo pendiente" in plan
     assert "Bloqueada por PM-G1" in plan
     assert "No autorizado en esta fase" in plan
     assert "bloqueada por dependencias externas" in plan
@@ -1078,7 +1078,7 @@ def check_pm1_human_effort_assets() -> None:
     status = (ROOT / "docs" / "post-plan" / "estado-pm-1.md").read_text(
         encoding="utf-8"
     )
-    assert 'REPORT_SCHEMA_VERSION = "pm-1-v1"' in service
+    assert 'REPORT_SCHEMA_VERSION = "pm-1-v2"' in service
     assert '"reconciliation_human_minutes"' in service
     assert "El tiempo de ciclo no se usa como sustituto" in service
     assert 'gate_status = "provisional_synthetic"' in service
@@ -1093,6 +1093,18 @@ def check_pm1_human_effort_assets() -> None:
     ).read_text(encoding="utf-8")
     assert 'revision: str = "0017"' in migration
     assert "human_minutes" in migration
+    integrity_migration = (
+        ROOT
+        / "backend"
+        / "migrations"
+        / "versions"
+        / "0018_human_effort_measurement_integrity.py"
+    ).read_text(encoding="utf-8")
+    assert 'revision: str = "0018"' in integrity_migration
+    assert "human_minutes_measured" in integrity_migration
+    assert "labor_accounting" in integrity_migration
+    assert "related_exception_id" in integrity_migration
+    assert '"reopenings": 0' in service
     assert "human_effort_dataset_csv" in generator
     assert "human_effort_markdown" in generator
     assert "PM-G1" in status
@@ -1177,7 +1189,8 @@ def check_pilot_metrics_calculation() -> None:
     exception = models.ExceptionCase(
         id=uuid.uuid4(), client_id=client_id, invoice_id=second_id,
         kind="payment_commitment", status="resolved", priority=1, detail={},
-        human_minutes=Decimal("30"), resolution={}, created_at=timestamp,
+        human_minutes=Decimal("30"), human_minutes_measured=True,
+        resolution={}, created_at=timestamp,
     )
     cause = models.DelayCause(
         id=uuid.uuid4(), client_id=client_id, invoice_id=second_id,

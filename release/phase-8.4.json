@@ -1,7 +1,7 @@
 {
   "release": "0.8.4",
   "release_kind": "local_pilot_readiness",
-  "database_migration_head": "0017",
+  "database_migration_head": "0018",
   "report_schema_version": "fase-8.2-v1",
   "package_schema_version": "fase-8.3-v1",
   "required_services": [
@@ -28,6 +28,7 @@
     "backend/migrations/versions/0015_pilot_closure.py",
     "backend/migrations/versions/0016_service_heartbeats.py",
     "backend/migrations/versions/0017_reconciliation_human_minutes.py",
+    "backend/migrations/versions/0018_human_effort_measurement_integrity.py",
     "scripts/backup-postgres.ps1",
     "scripts/verify-backup-restore.ps1",
     "scripts/rehearse-release.ps1",

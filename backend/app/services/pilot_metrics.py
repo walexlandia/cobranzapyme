@@ -153,7 +153,12 @@ def build_pilot_metrics(
         )
     )
     exception_human_minutes = sum(
-        (Decimal(item.human_minutes or 0) for item in exceptions), Decimal("0")
+        (
+            Decimal(item.human_minutes or 0)
+            for item in exceptions
+            if item.human_minutes_measured
+        ),
+        Decimal("0"),
     )
     pilot_log_entries = list(
         db.scalars(
@@ -165,7 +170,12 @@ def build_pilot_metrics(
         )
     )
     logged_human_minutes = sum(
-        (Decimal(item.human_minutes or 0) for item in pilot_log_entries), Decimal("0")
+        (
+            Decimal(item.human_minutes or 0)
+            for item in pilot_log_entries
+            if item.human_minutes_measured and item.labor_accounting == "additional"
+        ),
+        Decimal("0"),
     )
     human_minutes = exception_human_minutes + logged_human_minutes
     message_links = list(
