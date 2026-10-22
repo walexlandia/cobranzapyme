@@ -23,7 +23,7 @@ PM-1 está **completa localmente**. Mide y prioriza; no incorpora automatizacion
 - `GET /api/v1/metrics/human-effort`: diagnóstico JSON exclusivo para administración.
 - `GET /api/v1/metrics/human-effort.csv`: dataset agregado sin identificadores ni texto libre.
 - `GET /api/v1/metrics/human-effort.md`: informe legible con huella SHA-256.
-- `scripts/generate_pm1_diagnostic.py`: generación local con período y tipo de evidencia explícitos.
+- `scripts/generate_pm1_diagnostic.py`: generación local con período y tipo de evidencia explícitos; exige salida externa segura para evidencia autorizada.
 - `release/pm-1/`: snapshot sintético JSON, CSV y Markdown del período 2026-07-01 a 2026-10-22.
 - `docs/post-plan/pm-g1-readiness.md`: criterios, secuencia, rechazo y custodia de evidencia para ejecutar el gate real.
 

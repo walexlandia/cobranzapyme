@@ -33,8 +33,11 @@ python scripts/generate_pm1_diagnostic.py `
   --date-from AAAA-MM-DD `
   --date-to AAAA-MM-DD `
   --evidence-kind authorized_pilot `
-  --output-dir C:\ruta-segura\pm-g1
+  --output-dir C:\ruta-segura\pm-g1 `
+  --require-approved
 ```
+
+El comando rechaza una salida `authorized_pilot` dentro del repositorio. Con `--require-approved` retorna código `2` cuando el gate permanece bloqueado, de modo que un pipeline o checklist no pueda interpretar la mera generación de archivos como aprobación.
 
 6. Dos personas revisan el JSON, el CSV agregado y el informe Markdown. Se verifica una sola oportunidad material, ausencia de brechas y cobertura completa de autorización.
 7. PM-G1 se considera aprobada únicamente si el reporte devuelve simultáneamente:

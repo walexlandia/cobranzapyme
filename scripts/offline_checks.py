@@ -24,6 +24,8 @@ from sqlalchemy.schema import CreateTable
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "backend"))
 
+from generate_pm1_diagnostic import resolve_output_dir  # noqa: E402
+
 from app.base import Base  # noqa: E402
 from app import models  # noqa: E402,F401
 from app.config_validation import real_environment_issues  # noqa: E402
@@ -1114,8 +1116,28 @@ def check_pm1_human_effort_assets() -> None:
     assert '"reopenings": 0' in service
     assert "human_effort_dataset_csv" in generator
     assert "human_effort_markdown" in generator
+    assert "resolve_output_dir" in generator
+    assert "--require-approved" in generator
+    assert "authorized_pilot exige --output-dir" in generator
+    assert "no puede guardarse dentro del repositorio" in generator
     assert "PM-G1" in status
     assert "provisional_synthetic" in status
+    assert resolve_output_dir(evidence_kind="synthetic", output_dir=None) == (
+        ROOT / "release" / "pm-1"
+    )
+    external_output = (ROOT.parent / "pm-g1-secure-output").resolve()
+    assert resolve_output_dir(
+        evidence_kind="authorized_pilot", output_dir=external_output
+    ) == external_output
+    for unsafe_output in (None, ROOT / "release" / "pm-1-real"):
+        try:
+            resolve_output_dir(
+                evidence_kind="authorized_pilot", output_dir=unsafe_output
+            )
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("La evidencia autorizada aceptó una salida insegura")
 
 
 def check_pilot_metrics_calculation() -> None:
