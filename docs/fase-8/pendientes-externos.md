@@ -8,7 +8,7 @@
 | EXT-02 | Marco legal y mandato | Legal + representante de pyme | Dictamen, contrato, tratamiento de datos y mandato firmados | Bloqueado | Contacto real |
 | EXT-03 | Pymes y datos reales | Comercial + responsable del piloto | 2–3 pymes, responsables, históricos y línea base aceptada | Bloqueado | Piloto |
 | EXT-04 | Correo y WhatsApp | Infraestructura + operaciones | Remitente autenticado, plantillas aprobadas y prueba controlada | Bloqueado | Multicanal real |
-| EXT-05 | Pruebas backend integrales | Tecnología | Suite HTTP/ORM aprobada contra PostgreSQL con dependencias disponibles | Bloqueado por firewall | Go-live |
+| EXT-05 | Pruebas backend integrales | Tecnología | Suite HTTP/ORM aprobada contra PostgreSQL con dependencias disponibles | Completo localmente: 73/73 al 2026-10-22 | — |
 | EXT-06 | Operación de 6–8 semanas | Operaciones + pymes | Bitácora, métricas semanales, incidentes y aceptación | No iniciada | G4 |
 | EXT-07 | Decisión G4 | Administrador independiente + sponsor | Snapshot autorizado, revisión y decisión firmada | No iniciada | Escala |
 

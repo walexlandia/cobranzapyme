@@ -7,7 +7,10 @@ from sqlalchemy.orm import Session
 from app.domain import Role
 from app.models import (
     BankTransaction,
+    Contract,
+    Document,
     ExceptionCase,
+    PilotAuthorizationEvent,
     PilotLogEntry,
     ReconciliationProposal,
 )
@@ -192,6 +195,54 @@ def test_pm1_diagnostic_ranks_cost_without_inventing_reconciliation_minutes(
     assert claimed_real.status_code == 200
     assert claimed_real.json()["pm_g1"]["status"] == "authorization_incomplete"
     assert claimed_real.json()["pm_g1"]["pm2_authorized"] is False
+
+    contract = Contract(
+        client_id=tenant.id,
+        version=1,
+        rules={"channels": ["email"]},
+        active=True,
+    )
+    db.add(contract)
+    db.flush()
+    evidence = Document(
+        client_id=tenant.id,
+        kind="pilot_authorization",
+        object_key="test/pm-g1/authorization",
+        original_name="authorization.txt",
+        sha256="a" * 64,
+    )
+    db.add(evidence)
+    db.flush()
+    db.add(
+        PilotAuthorizationEvent(
+            client_id=tenant.id,
+            contract_id=contract.id,
+            action="approved",
+            channels=["email"],
+            authorized_contact_name="Responsable autorizado",
+            authorized_contact_email="pm-g1@example.test",
+            valid_from=date(2026, 2, 1),
+            valid_until=date(2026, 2, 28),
+            evidence_document_id=evidence.id,
+            performed_by=admin.id,
+            note="Evidencia ficticia exclusiva para probar PM-G1.",
+            idempotency_key="pm-g1-authorized-fixture",
+        )
+    )
+    db.commit()
+    authorized = client.get(
+        "/api/v1/metrics/human-effort?date_from=2026-02-01&date_to=2026-02-28"
+        "&evidence_kind=authorized_pilot",
+        headers=admin_headers,
+    )
+    assert authorized.status_code == 200
+    assert authorized.json()["pm_g1"]["status"] == "approved"
+    assert authorized.json()["pm_g1"]["pm2_authorized"] is True
+    assert authorized.json()["pm_g1"]["authorization_coverage"] == {
+        "participating_clients": 1,
+        "authorized_clients": 1,
+        "complete": True,
+    }
 
     assert (
         client.get(

@@ -47,6 +47,7 @@
     "docs/post-plan/estado-9.3.md",
     "docs/post-plan/plan-mejora-fases.md",
     "docs/post-plan/estado-pm-1.md",
+    "docs/post-plan/pm-g1-readiness.md",
     "scripts/generate_pm1_diagnostic.py",
     "release/pm-1/diagnostico.json",
     "release/pm-1/fricciones.csv",

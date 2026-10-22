@@ -1062,6 +1062,13 @@ def check_post_plan_improvement_plan() -> None:
     assert "Bloqueada por PM-G1" in plan
     assert "No autorizado en esta fase" in plan
     assert "bloqueada por dependencias externas" in plan
+    assert "PM-G1 — validación con evidencia real autorizada" in plan
+    readiness = (
+        ROOT / "docs" / "post-plan" / "pm-g1-readiness.md"
+    ).read_text(encoding="utf-8")
+    assert "pm_g1.status = approved" in readiness
+    assert "pm_g1.measurement_complete = true" in readiness
+    assert "Evidencia que no debe guardarse en Git" in readiness
     posterior = (
         ROOT / "docs" / "fase-8" / "backlog-posterior.md"
     ).read_text(encoding="utf-8")

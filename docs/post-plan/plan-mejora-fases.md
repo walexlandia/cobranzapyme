@@ -132,4 +132,4 @@ Esta fase solo existe si PM-G5 termina en `scale`. Recién entonces se priorizan
 
 ## Próximo trabajo autorizado
 
-El siguiente bloque continúa siendo **PM-1 — Diagnóstico del costo humano**. El instrumento y la evidencia sintética ya están completos; faltan evidencia autorizada, cobertura de conciliaciones nuevas, distinción entre cero y dato omitido, control de solapamiento con la bitácora e historial de reaperturas. PM-2 no puede comenzar hasta aprobar PM-G1.
+PM-1 está cerrada localmente. El siguiente bloque es **PM-G1 — validación con evidencia real autorizada**, siguiendo `docs/post-plan/pm-g1-readiness.md`. Requiere contratos y mandatos vigentes, 2–3 pymes participantes, datos reales aceptados y una medición sin brechas. No se desarrollan funcionalidades de PM-2 mientras el diagnóstico permanezca en `provisional_synthetic`, `authorization_incomplete`, `measurement_gaps` o `needs_measurement`.
