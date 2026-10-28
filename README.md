@@ -197,6 +197,7 @@ PM-1 inicia el plan de mejora con diagnóstico, no con una función nueva:
 - ficha de una sola oportunidad con objetivo condicionado de reducción de 20%;
 - minutos obligatorios en nuevas decisiones humanas de conciliación, separados del tiempo de espera;
 - puerta `provisional_synthetic`, que mantiene PM-2 bloqueada hasta contar con evidencia autorizada.
+- ensayo PM-G1.1 aislado y desechable de aprobación, revocación, cifrado y bloqueo, reproducible con `.\scripts\rehearse-pm-g1.ps1`.
 
 ## Servicios
 
@@ -267,5 +268,6 @@ Los CSV listos para importar están en `data/demo/imports`. Incluyen tres pymes 
 - `docs/post-plan/`: endurecimiento, observabilidad, runbook y panel administrativo posteriores al plan original.
 - `docs/post-plan/plan-mejora-fases.md`: fases PM-0 a PM-6, métricas y puertas que controlan todo desarrollo posterior.
 - `docs/post-plan/estado-pm-1.md`: diagnóstico reproducible, brechas de medición y estado provisional de PM-G1.
+- `docs/post-plan/ensayo-pm-g1.md`: cierre local de PM-1 mediante el ensayo integral desechable del gate.
 - `examples/`: archivos de facturas y contactos para probar las importaciones.
 

@@ -1,6 +1,6 @@
 # PM-G1 — Checklist de evidencia autorizada
 
-Fecha de preparación local: 2026-10-22.
+Fecha de preparación local: 2026-10-28.
 
 Este documento cierra la preparación de PM-1 y define cómo evaluar PM-G1 sin confundir datos sintéticos con evidencia real. No autoriza PM-2 por sí mismo.
 
@@ -70,6 +70,8 @@ Git conserva solamente este procedimiento, las pruebas automatizadas y el snapsh
 ## Estado
 
 Preparación técnica: **completa localmente**.
+
+Ensayo integral desechable: **aprobado localmente** el 2026-10-28. La prueba cubrió tres pymes sintéticas, salida segura, cifrado, aprobación, revocación, bloqueo y limpieza del entorno; véase `docs/post-plan/ensayo-pm-g1.md`.
 
 Evidencia real: **pendiente de EXT-02 y EXT-03**.
 

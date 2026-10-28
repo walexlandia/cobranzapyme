@@ -1,0 +1,30 @@
+services:
+  pm_g1_db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: pm_g1_rehearsal
+      POSTGRES_USER: pm_g1_rehearsal
+      POSTGRES_PASSWORD: pm_g1_rehearsal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pm_g1_rehearsal -d pm_g1_rehearsal"]
+      interval: 2s
+      timeout: 5s
+      retries: 20
+
+  pm_g1_rehearsal:
+    build:
+      context: ./backend
+    working_dir: /workspace/backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://pm_g1_rehearsal:pm_g1_rehearsal@pm_g1_db:5432/pm_g1_rehearsal
+      JWT_SECRET: pm-g1-rehearsal-secret-with-thirty-two-characters
+      DOCUMENT_ENCRYPTION_KEY: pm-g1-rehearsal-document-key-with-thirty-two-characters
+      REPORT_ANONYMIZATION_KEY: pm-g1-rehearsal-report-key-with-thirty-two-characters
+      ENVIRONMENT: test
+      PM_G1_REHEARSAL_ROOT: /workspace
+    command: sh -c "alembic upgrade head && pytest -q tests/test_pm_g1_rehearsal.py"
+    volumes:
+      - .:/workspace
+    depends_on:
+      pm_g1_db:
+        condition: service_healthy

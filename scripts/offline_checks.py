@@ -1122,6 +1122,27 @@ def check_pm1_human_effort_assets() -> None:
     assert "no puede guardarse dentro del repositorio" in generator
     assert "PM-G1" in status
     assert "provisional_synthetic" in status
+    rehearsal_doc = (
+        ROOT / "docs" / "post-plan" / "ensayo-pm-g1.md"
+    ).read_text(encoding="utf-8")
+    rehearsal_compose = (ROOT / "compose.pm-g1-rehearsal.yaml").read_text(
+        encoding="utf-8"
+    )
+    rehearsal_script = (ROOT / "scripts" / "rehearse-pm-g1.ps1").read_text(
+        encoding="utf-8"
+    )
+    rehearsal_test = (
+        ROOT / "backend" / "tests" / "test_pm_g1_rehearsal.py"
+    ).read_text(encoding="utf-8")
+    assert "approved -> revoked -> authorization_incomplete" in rehearsal_doc
+    assert "PM_G1_REHEARSAL_ROOT" in rehearsal_compose
+    assert "pm_g1_db" in rehearsal_compose
+    assert "--abort-on-container-exit" in rehearsal_script
+    assert "down --volumes --remove-orphans" in rehearsal_script
+    assert "com.docker.compose.project" in rehearsal_script
+    assert '== "approved"' in rehearsal_test
+    assert '== "authorization_incomplete"' in rehearsal_test
+    assert "decrypt_document_content" in rehearsal_test
     assert resolve_output_dir(evidence_kind="synthetic", output_dir=None) == (
         ROOT / "release" / "pm-1"
     )
