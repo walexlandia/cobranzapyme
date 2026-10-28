@@ -12,8 +12,8 @@ La nomenclatura `PM` significa **Plan de Mejora** y evita confundir estas fases 
 |---|---|---|---|
 | PM-0 | Base segura, observable y medible | Completa localmente | E12, métricas del piloto y bloques 9.1–9.3 |
 | PM-1 | Diagnosticar el costo humano | Completa localmente; PM-G1 externo pendiente | Prioridad 1 del backlog posterior |
-| PM-2 | Optimizar un flujo humano comprobado | Bloqueada por PM-G1 | E7, E8 y prioridad 1 |
-| PM-3 | Fortalecer comparables y atribución | Pendiente de PM-2 | E9, E11 y prioridad 2 |
+| PM-2 | Optimizar un flujo humano comprobado | Completa experimentalmente; PM-G2 real pendiente | E7, E8 y prioridad 1 |
+| PM-3 | Fortalecer comparables y atribución | Bloqueada para producción por PM-G2 real | E9, E11 y prioridad 2 |
 | PM-4 | Automatizar un bloqueo documental probado | Bloqueada por evidencia real | Épica P y prioridad 3 |
 | PM-5 | Ejecutar una iteración real acotada | Bloqueada externamente | Prioridades 4–5 y puerta G4 |
 | PM-6 | Preparar escala | Condicional a decisión `scale` | G4 y Épica 13 |
@@ -72,7 +72,7 @@ Si falta cualquiera de estos elementos, la tarea permanece como hipótesis y no 
 
 **Objetivo:** reducir el costo del cuello de botella elegido en PM-1 sin aumentar errores ni acciones duplicadas.
 
-**Trabajo condicionado a PM-G1:**
+**Trabajo autorizado como experimento local por decisión del responsable; condicionado a PM-G1 para uso real:**
 
 - mapear el flujo actual y eliminar pasos sin valor;
 - diseñar asistencia guiada para la decisión repetitiva seleccionada;
@@ -85,6 +85,8 @@ Si falta cualquiera de estos elementos, la tarea permanece como hipótesis y no 
 **Métricas:** reducción de minutos y tiempo de resolución, tasa de error, duplicados, reaperturas y porcentaje de casos resueltos sin pasos adicionales.
 
 **Puerta PM-G2:** el benchmark reduce al menos 20% el tiempo del flujo seleccionado, mantiene cero duplicados y conserva trazabilidad completa. El resultado sintético autoriza evaluación, no demuestra rentabilidad real.
+
+**Estado local al 2026-10-28:** PM-2 está completa experimentalmente. Se acotó `manual_work` a la revisión semanal de cartera y se implementó una sesión guiada de cinco pasos, idempotente, cancelable antes del cierre, inmutable después y sin acciones externas. El benchmark sintético comparable redujo 54 a 36 minutos, 33,33%, con tres casos, cero duplicados, cero reaperturas y trazabilidad completa. PM-G2 queda en `passed_synthetic`; la evidencia real continúa pendiente y PM-3 no está autorizada para producción.
 
 ## PM-3 — Comparables y atribución defendible
 
@@ -132,4 +134,4 @@ Esta fase solo existe si PM-G5 termina en `scale`. Recién entonces se priorizan
 
 ## Próximo trabajo autorizado
 
-PM-1 está cerrada localmente. El siguiente bloque es **PM-G1 — validación con evidencia real autorizada**, siguiendo `docs/post-plan/pm-g1-readiness.md`. Requiere contratos y mandatos vigentes, 2–3 pymes participantes, datos reales aceptados y una medición sin brechas. No se desarrollan funcionalidades de PM-2 mientras el diagnóstico permanezca en `provisional_synthetic`, `authorization_incomplete`, `measurement_gaps` o `needs_measurement`.
+PM-2 está cerrada localmente en modalidad experimental. El trabajo productivo siguiente continúa siendo **PM-G1/PM-G2 — validación con evidencia real autorizada**. Cualquier avance local hacia PM-3 debe conservar la misma separación explícita entre prueba sintética y autorización productiva.

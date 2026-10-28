@@ -1,0 +1,37 @@
+{
+  "schema_version": "pm-2-v1",
+  "evidence_kind": "synthetic",
+  "workflow": {
+    "key": "weekly_portfolio_review",
+    "title": "Revisión semanal de cartera guiada",
+    "guidance_version": "pm-2-v1"
+  },
+  "sample": {
+    "completed_cases": 3,
+    "minimum_cases": 3
+  },
+  "before": {
+    "minutes_per_case": "18.00",
+    "total_human_minutes": "54.00"
+  },
+  "after": {
+    "average_minutes_per_case": "12.00",
+    "total_human_minutes": "36.00"
+  },
+  "reduction_percent": "33.33",
+  "safety": {
+    "idempotency_duplicates": 0,
+    "reopenings": 0,
+    "traceability_complete": true,
+    "external_actions_executed": 0
+  },
+  "pm_g2": {
+    "status": "passed_synthetic",
+    "local_phase_complete": true,
+    "pm3_authorized": false,
+    "sample_complete": true,
+    "reduction_target_met": true,
+    "reason": "El benchmark sintético cumple reducción, idempotencia y trazabilidad; requiere evidencia real antes de autorizar PM-3."
+  },
+  "fingerprint_sha256": "dc92f00037524ba8cec4b0f53977f71ebb0a11210b1b16f9c9e86dfd6367a167"
+}

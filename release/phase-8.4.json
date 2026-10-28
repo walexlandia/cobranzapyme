@@ -1,7 +1,7 @@
 {
   "release": "0.8.4",
   "release_kind": "local_pilot_readiness",
-  "database_migration_head": "0018",
+  "database_migration_head": "0019",
   "report_schema_version": "fase-8.2-v1",
   "package_schema_version": "fase-8.3-v1",
   "required_services": [
@@ -29,6 +29,7 @@
     "backend/migrations/versions/0016_service_heartbeats.py",
     "backend/migrations/versions/0017_reconciliation_human_minutes.py",
     "backend/migrations/versions/0018_human_effort_measurement_integrity.py",
+    "backend/migrations/versions/0019_guided_portfolio_review.py",
     "scripts/backup-postgres.ps1",
     "scripts/verify-backup-restore.ps1",
     "scripts/rehearse-release.ps1",
@@ -55,7 +56,17 @@
     "scripts/generate_pm1_diagnostic.py",
     "release/pm-1/diagnostico.json",
     "release/pm-1/fricciones.csv",
-    "release/pm-1/informe.md"
+    "release/pm-1/informe.md",
+    "backend/app/services/guided_work.py",
+    "backend/app/routers/optimizations.py",
+    "backend/tests/test_pm2_guided_work.py",
+    "web/app/page.jsx",
+    "web/app/globals.css",
+    "data/demo/pm2-guided-review-benchmark.json",
+    "scripts/generate_pm2_benchmark.py",
+    "docs/post-plan/estado-pm-2.md",
+    "release/pm-2/benchmark.json",
+    "release/pm-2/informe.md"
   ],
   "external_gates": [
     {

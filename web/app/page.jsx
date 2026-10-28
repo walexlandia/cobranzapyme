@@ -63,6 +63,9 @@ const eventLabels = {
   "pilot.authorization_revoked": "Autorización del piloto revocada",
   "client_document.submitted": "Documento enviado por la pyme",
   "client_document.reviewed": "Documento de la pyme revisado",
+  "optimization.guided_work_started": "Revisión guiada iniciada",
+  "optimization.guided_work_completed": "Revisión guiada completada",
+  "optimization.guided_work_cancelled": "Revisión guiada cancelada",
 };
 
 const payabilityLabels = {
@@ -1212,6 +1215,87 @@ function FinalReportPanel({ request, download, user }) {
   </section>;
 }
 
+function GuidedPortfolioReview({ clientId, operationDate, request, onOpenView, onMeasured }) {
+  const [guide, setGuide] = useState(null);
+  const [sessions, setSessions] = useState([]);
+  const [benchmark, setBenchmark] = useState(null);
+  const [checked, setChecked] = useState({});
+  const [minutes, setMinutes] = useState("12");
+  const [outcome, setOutcome] = useState("no_action");
+  const [note, setNote] = useState("Revisión completada sin ejecutar acciones externas.");
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState(null);
+
+  const load = useCallback(async () => {
+    if (!clientId) return;
+    try {
+      const [guideResult, sessionRows, benchmarkResult] = await Promise.all([
+        request("/api/v1/optimizations/weekly-portfolio-review/guide"),
+        request(`/api/v1/optimizations/weekly-portfolio-review/sessions?client_id=${clientId}`),
+        request("/api/v1/optimizations/weekly-portfolio-review/benchmark"),
+      ]);
+      setGuide(guideResult); setSessions(sessionRows); setBenchmark(benchmarkResult);
+    } catch (error) { setMessage({ type: "error", text: error.message }); }
+  }, [clientId, request]);
+  useEffect(() => { setChecked({}); load(); }, [load]);
+
+  const openSession = sessions.find((session) => session.status === "open");
+  async function start() {
+    setBusy(true); setMessage(null);
+    try {
+      await request("/api/v1/optimizations/weekly-portfolio-review/sessions", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ client_id: clientId, idempotency_key: `weekly-review-${operationDate}` }),
+      });
+      setMessage({ type: "success", text: "Sesión guiada iniciada sin ejecutar acciones operativas." });
+      await load();
+    } catch (error) { setMessage({ type: "error", text: error.message }); }
+    finally { setBusy(false); }
+  }
+  async function complete(event) {
+    event.preventDefault();
+    if (!openSession || !guide) return;
+    const completedStepKeys = guide.steps.filter((step) => checked[step.key]).map((step) => step.key);
+    if (completedStepKeys.length !== guide.steps.length) { setMessage({ type: "error", text: "Confirma los cinco pasos antes de cerrar la revisión." }); return; }
+    setBusy(true); setMessage(null);
+    try {
+      await request(`/api/v1/optimizations/weekly-portfolio-review/sessions/${openSession.id}/complete`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ completed_step_keys: completedStepKeys, human_minutes: Number(minutes), outcome, outcome_note: note }),
+      });
+      setChecked({});
+      setMessage({ type: "success", text: "Revisión medida y registrada con trazabilidad completa." });
+      await load();
+      await onMeasured();
+    } catch (error) { setMessage({ type: "error", text: error.message }); }
+    finally { setBusy(false); }
+  }
+  async function cancel() {
+    if (!openSession) return;
+    setBusy(true); setMessage(null);
+    try {
+      await request(`/api/v1/optimizations/weekly-portfolio-review/sessions/${openSession.id}/cancel`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: "Sesión descartada por el operador antes de registrar trabajo." }),
+      });
+      setChecked({}); setMessage({ type: "success", text: "Sesión cancelada sin registrar minutos." }); await load();
+    } catch (error) { setMessage({ type: "error", text: error.message }); }
+    finally { setBusy(false); }
+  }
+
+  return <article className="guided-review-card">
+    <div className="card-heading"><div><p className="kicker">PM-2 · ASISTENCIA GUIADA</p><h3>Revisión semanal de cartera</h3></div><span className="read-only">Solo lectura + registro humano</span></div>
+    <Message value={message} onClose={() => setMessage(null)} />
+    {guide && <div className="guided-review-summary"><div><span>Línea base</span><b>{guide.baseline_minutes_per_case} min</b></div><div><span>Objetivo</span><b>≤ {guide.target_minutes_per_case} min</b></div><div><span>Sesiones</span><b>{benchmark?.sample.completed_cases || 0}</b></div><div><span>Reducción</span><b>{benchmark?.reduction_percent || "0.00"}%</b></div></div>}
+    {!openSession && <div className="guided-review-start"><p>La guía reúne cartera, pagabilidad y excepciones. No envía mensajes, modifica facturas ni decide conciliaciones.</p><button type="button" className="primary" onClick={start} disabled={busy || !guide}>Iniciar revisión guiada</button></div>}
+    {openSession && guide && <form className="guided-review-form" onSubmit={complete}>
+      <div className="guided-checklist">{guide.steps.map((step, index) => <label key={step.key} className={checked[step.key] ? "checked" : ""}><input type="checkbox" checked={Boolean(checked[step.key])} onChange={(event) => setChecked((current) => ({ ...current, [step.key]: event.target.checked }))} /><i>{index + 1}</i><span><b>{step.label}</b><small>{step.instruction}</small></span>{step.target_view !== "pilot_operations" && <button type="button" className="mini-button" onClick={() => onOpenView(step.target_view)}>Abrir</button>}</label>)}</div>
+      <div className="guided-completion"><label>Minutos reales<input type="number" min="0" max="480" step="0.1" required value={minutes} onChange={(event) => setMinutes(event.target.value)} /></label><label>Resultado<select value={outcome} onChange={(event) => setOutcome(event.target.value)}><option value="no_action">Sin acción</option><option value="prepare_follow_up">Preparar seguimiento</option><option value="escalate_review">Escalar revisión</option></select></label><label className="wide">Nota humana<textarea minLength="3" maxLength="1000" required value={note} onChange={(event) => setNote(event.target.value)} /></label><div className="button-row wide"><button type="button" className="ghost" onClick={cancel} disabled={busy}>Cancelar sesión</button><button className="primary" disabled={busy}>Completar y medir</button></div></div>
+    </form>}
+    {benchmark?.pm_g2.status === "passed_synthetic" && <p className="guided-gate-pass">✓ PM-G2 sintética aprobada para evaluación local; no habilita PM-3 productiva.</p>}
+  </article>;
+}
+
 function PilotOperationsPanel({ clientId, invoices, request, onOpenView }) {
   const today = new Date().toISOString().slice(0, 10);
   const [operationDate, setOperationDate] = useState(() => typeof window === "undefined" ? today : (localStorage.getItem("recupera_demo_date") || today));
@@ -1264,6 +1348,7 @@ function PilotOperationsPanel({ clientId, invoices, request, onOpenView }) {
   return <section className="pilot-operations-layout">
     <Message value={message} onClose={() => setMessage(null)} />
     <article className="demo-walkthrough"><div className="card-heading"><div><p className="kicker">E0-08 · RECORRIDO CONTROLADO</p><h3>Demostración de punta a punta</h3></div><label>Fecha de operación<input type="date" value={operationDate} onChange={(event) => fixOperationDate(event.target.value)} /></label></div>{walkthrough && <><div className="walkthrough-progress"><b>{walkthrough.ready_steps}/{walkthrough.total_steps} etapas con evidencia</b><progress max={walkthrough.total_steps} value={walkthrough.ready_steps} /></div><div className="walkthrough-steps">{walkthrough.steps.map((step, index) => <button type="button" key={step.key} className={step.ready ? "ready" : "pending"} onClick={() => onOpenView(step.target_view)}><i>{index + 1}</i><span><b>{step.label}</b><small>{step.ready ? "Evidencia disponible" : "Pendiente para esta fecha"}</small></span><em>{step.ready ? "✓" : "—"}</em></button>)}</div><p className="metric-note">La fecha controla este recorrido de lectura; no altera la base ni dispara comunicaciones externas.</p></>}</article>
+    <GuidedPortfolioReview clientId={clientId} operationDate={operationDate} request={request} onOpenView={onOpenView} onMeasured={load} />
     <article className="pilot-log-form-card"><div className="card-heading"><div><p className="kicker">OPERACIÓN Y APRENDIZAJE</p><h3>Registrar actividad del piloto</h3></div></div><form className="pilot-log-form" onSubmit={createEntry}><label>Tipo<select value={form.entry_type} onChange={(event) => setForm((current) => ({ ...current, entry_type: event.target.value }))}>{Object.entries(typeLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label><label>Severidad<select value={form.severity} onChange={(event) => setForm((current) => ({ ...current, severity: event.target.value }))}><option value="info">Informativa</option><option value="warning">Advertencia</option><option value="critical">Crítica</option></select></label><label>Fecha<input type="date" required value={form.occurred_on} onChange={(event) => setForm((current) => ({ ...current, occurred_on: event.target.value }))} /></label><label>Minutos humanos medidos<input required type="number" min="0" max="1440" step="0.1" value={form.human_minutes} onChange={(event) => setForm((current) => ({ ...current, human_minutes: event.target.value }))} /></label><label className="wide">Contabilización<select value={form.labor_accounting} onChange={(event) => setForm((current) => ({ ...current, labor_accounting: event.target.value }))}><option value="additional">Trabajo adicional (sumar al diagnóstico)</option></select><small>El trabajo ya incluido en una excepción debe registrarse por API con la excepción vinculada.</small></label><label className="wide">Factura relacionada<select value={form.related_invoice_id} onChange={(event) => setForm((current) => ({ ...current, related_invoice_id: event.target.value }))}><option value="">Caso general</option>{invoices.map((invoice) => <option key={invoice.id} value={invoice.id}>{invoice.folio} · {invoice.payer_name}</option>)}</select></label><label className="wide">Título<input required minLength="3" maxLength="200" value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} /></label><label className="wide">Detalle<textarea required minLength="3" maxLength="4000" value={form.detail} onChange={(event) => setForm((current) => ({ ...current, detail: event.target.value }))} /></label><button className="primary" disabled={busy}>Guardar registro</button></form></article>
     <article className="pilot-log-card"><div className="card-heading"><div><p className="kicker">TRAZABILIDAD</p><h3>Decisiones e incidencias</h3></div><span className="read-only">{entries.filter((entry) => entry.status === "open").length} abiertas</span></div><div className="pilot-log-list">{entries.map((entry) => <article key={entry.id} className={`${entry.severity} ${entry.status}`}><div className="pilot-log-meta"><span>{typeLabels[entry.entry_type] || entry.entry_type}</span><small>{entry.occurred_on} · {entry.human_minutes} min</small></div><div><b>{entry.title}</b><p>{entry.detail}</p>{entry.resolution_note && <small>Resolución: {entry.resolution_note}</small>}</div><span className={`status-pill ${entry.status}`}>{entry.status}</span>{entry.status === "open" && <div className="pilot-resolve"><input placeholder="Resolución aplicada" value={resolutionNotes[entry.id] || ""} onChange={(event) => setResolutionNotes((current) => ({ ...current, [entry.id]: event.target.value }))} /><button type="button" className="mini-button" disabled={busy} onClick={() => resolveEntry(entry)}>Resolver</button></div>}</article>)}{!entries.length && <p className="empty">Aún no hay registros para este cliente.</p>}</div></article>
   </section>;

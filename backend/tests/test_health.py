@@ -14,4 +14,4 @@ def test_health_and_release_version(client: TestClient) -> None:
     assert ready.status_code == 200 and ready.json() == {"status": "ready"}
     assert version.status_code == 200
     assert version.json()["version"] == "0.8.4"
-    assert version.json()["database_migration_head"] == "0018"
+    assert version.json()["database_migration_head"] == "0019"

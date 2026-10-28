@@ -491,6 +491,7 @@ def check_schema_compiles_for_postgresql() -> None:
         "pilot_authorization_events",
         "client_document_submissions",
         "pilot_log_entries",
+        "guided_work_sessions",
         "pilot_closure_snapshots",
         "service_heartbeats",
     }
@@ -535,8 +536,8 @@ def check_migration_chain() -> None:
         if down_revision is not None:
             assert down_revision in revisions, f"Unknown parent {down_revision} in {path.name}"
             heads.discard(down_revision)
-    assert heads == {"0018"}, f"Unexpected migration heads: {sorted(heads)}"
-    current: str | None = "0018"
+    assert heads == {"0019"}, f"Unexpected migration heads: {sorted(heads)}"
+    current: str | None = "0019"
     visited = []
     while current is not None:
         assert current not in visited, f"Migration cycle at {current}"
@@ -893,7 +894,7 @@ def check_phase8_release_readiness_assets() -> None:
     manifest_path = ROOT / "release" / "phase-8.4.json"
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     assert manifest["release"] == "0.8.4"
-    assert manifest["database_migration_head"] == "0018"
+    assert manifest["database_migration_head"] == "0019"
     assert manifest["report_schema_version"] == "fase-8.2-v1"
     assert manifest["package_schema_version"] == "fase-8.3-v1"
     assert all(gate["status"] == "blocked" for gate in manifest["external_gates"])
@@ -925,7 +926,7 @@ def check_phase8_release_readiness_assets() -> None:
     version = (ROOT / "backend" / "app" / "version.py").read_text(encoding="utf-8")
     assert 'router.get("/health/version")' in health
     assert 'APP_VERSION = "0.8.4"' in version
-    assert 'DATABASE_MIGRATION_HEAD = "0018"' in version
+    assert 'DATABASE_MIGRATION_HEAD = "0019"' in version
 
 
 def check_post_plan_hardening_assets() -> None:
@@ -1061,10 +1062,10 @@ def check_post_plan_improvement_plan() -> None:
         assert f"PM-G{gate}" in plan
     assert "Regla obligatoria de admisión" in plan
     assert "Completa localmente; PM-G1 externo pendiente" in plan
-    assert "Bloqueada por PM-G1" in plan
+    assert "Completa experimentalmente; PM-G2 real pendiente" in plan
     assert "No autorizado en esta fase" in plan
     assert "bloqueada por dependencias externas" in plan
-    assert "PM-G1 — validación con evidencia real autorizada" in plan
+    assert "PM-G1/PM-G2 — validación con evidencia real autorizada" in plan
     readiness = (
         ROOT / "docs" / "post-plan" / "pm-g1-readiness.md"
     ).read_text(encoding="utf-8")
@@ -1159,6 +1160,47 @@ def check_pm1_human_effort_assets() -> None:
             pass
         else:
             raise AssertionError("La evidencia autorizada aceptó una salida insegura")
+
+
+def check_pm2_guided_optimization_assets() -> None:
+    migration = (
+        ROOT
+        / "backend"
+        / "migrations"
+        / "versions"
+        / "0019_guided_portfolio_review.py"
+    ).read_text(encoding="utf-8")
+    service = (
+        ROOT / "backend" / "app" / "services" / "guided_work.py"
+    ).read_text(encoding="utf-8")
+    router = (
+        ROOT / "backend" / "app" / "routers" / "optimizations.py"
+    ).read_text(encoding="utf-8")
+    portal = (ROOT / "web" / "app" / "page.jsx").read_text(encoding="utf-8")
+    report = json.loads(
+        (ROOT / "release" / "pm-2" / "benchmark.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert 'revision: str = "0019"' in migration
+    assert "uq_guided_work_idempotency_key" in migration
+    assert 'WORKFLOW_KEY = "weekly_portfolio_review"' in service
+    assert 'GUIDANCE_VERSION = "pm-2-v1"' in service
+    assert "external_action_executed" in service
+    assert "complete_guided_work" in router and "cancel_guided_work" in router
+    assert "GuidedPortfolioReview" in portal
+    assert report["schema_version"] == "pm-2-v1"
+    assert report["sample"]["completed_cases"] == 3
+    assert report["before"]["total_human_minutes"] == "54.00"
+    assert report["after"]["total_human_minutes"] == "36.00"
+    assert report["reduction_percent"] == "33.33"
+    assert report["safety"]["idempotency_duplicates"] == 0
+    assert report["safety"]["traceability_complete"] is True
+    assert report["safety"]["external_actions_executed"] == 0
+    assert report["pm_g2"]["status"] == "passed_synthetic"
+    assert report["pm_g2"]["local_phase_complete"] is True
+    assert report["pm_g2"]["pm3_authorized"] is False
+    assert (ROOT / "docs" / "post-plan" / "estado-pm-2.md").is_file()
 
 
 def check_pilot_metrics_calculation() -> None:
@@ -1430,6 +1472,7 @@ def main() -> None:
         check_post_plan_operations_ui_assets,
         check_post_plan_improvement_plan,
         check_pm1_human_effort_assets,
+        check_pm2_guided_optimization_assets,
         check_pilot_metrics_calculation,
         check_client_portal_calculation,
         check_workflow_rules,

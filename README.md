@@ -199,6 +199,14 @@ PM-1 inicia el plan de mejora con diagnóstico, no con una función nueva:
 - puerta `provisional_synthetic`, que mantiene PM-2 bloqueada hasta contar con evidencia autorizada.
 - ensayo PM-G1.1 aislado y desechable de aprobación, revocación, cifrado y bloqueo, reproducible con `.\scripts\rehearse-pm-g1.ps1`.
 
+PM-2 optimiza experimentalmente la revisión semanal de cartera:
+
+- sesión guiada de cinco pasos en el portal, con decisión humana y sin acciones externas;
+- inicio idempotente, cancelación segura e inmutabilidad después del cierre;
+- medición automática en la bitácora y eventos auditables de inicio y término;
+- benchmark sintético reproducible de 54 a 36 minutos, una reducción de 33,33%;
+- puerta `passed_synthetic`, que cierra PM-2 localmente sin afirmar impacto real.
+
 ## Servicios
 
 - `db`: PostgreSQL 16.
@@ -269,5 +277,6 @@ Los CSV listos para importar están en `data/demo/imports`. Incluyen tres pymes 
 - `docs/post-plan/plan-mejora-fases.md`: fases PM-0 a PM-6, métricas y puertas que controlan todo desarrollo posterior.
 - `docs/post-plan/estado-pm-1.md`: diagnóstico reproducible, brechas de medición y estado provisional de PM-G1.
 - `docs/post-plan/ensayo-pm-g1.md`: cierre local de PM-1 mediante el ensayo integral desechable del gate.
+- `docs/post-plan/estado-pm-2.md`: flujo guiado, controles y benchmark que cierran PM-2 localmente.
 - `examples/`: archivos de facturas y contactos para probar las importaciones.
 

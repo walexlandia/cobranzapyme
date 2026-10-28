@@ -17,6 +17,7 @@ from app.routers import (
     invoices,
     metrics,
     operations,
+    optimizations,
     payability,
     payers,
     payments,
@@ -45,6 +46,7 @@ app.include_router(clients.router)
 app.include_router(invoices.router)
 app.include_router(metrics.router)
 app.include_router(operations.router)
+app.include_router(optimizations.router)
 app.include_router(imports.router)
 app.include_router(contracts.router)
 app.include_router(workflows.router)

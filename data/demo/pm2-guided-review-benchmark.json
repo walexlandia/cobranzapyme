@@ -1,0 +1,24 @@
+{
+  "schema_version": "pm-2-fixture-v1",
+  "evidence_kind": "synthetic",
+  "sessions": [
+    {
+      "id": "10000000-0000-0000-0000-000000000001",
+      "idempotency_key": "synthetic-weekly-review-1",
+      "baseline_minutes": "18.00",
+      "human_minutes": "12.00"
+    },
+    {
+      "id": "10000000-0000-0000-0000-000000000002",
+      "idempotency_key": "synthetic-weekly-review-2",
+      "baseline_minutes": "18.00",
+      "human_minutes": "13.00"
+    },
+    {
+      "id": "10000000-0000-0000-0000-000000000003",
+      "idempotency_key": "synthetic-weekly-review-3",
+      "baseline_minutes": "18.00",
+      "human_minutes": "11.00"
+    }
+  ]
+}

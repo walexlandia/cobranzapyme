@@ -60,7 +60,7 @@ Estado: **`provisional_synthetic`**.
 - Existe un candidato material en el seed, pero es una categoría amplia de bitácora.
 - La evidencia sintética no aprueba PM-G1.
 - Declarar `authorized_pilot` tampoco basta: el diagnóstico exige contrato activo, autorización vigente y comprobante para cada cliente que sustenta la oportunidad.
-- PM-2 permanece bloqueada hasta repetir el informe con datos reales autorizados y aprobar PM-G1.
+- PM-2 productiva permanece bloqueada hasta repetir el informe con datos reales autorizados y aprobar PM-G1; el responsable autorizó por separado un experimento sintético local.
 - El ensayo sintético de PM-G1.1 verificó `approved -> revoked -> authorization_incomplete`, los códigos de salida `0/2`, el cifrado documental y la destrucción del entorno. No cambia el estado externo del gate.
 
 ## Reproducción local

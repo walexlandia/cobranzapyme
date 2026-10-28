@@ -1163,6 +1163,58 @@ class PilotLogEntryView(BaseModel):
     created_at: datetime
 
 
+class GuidedWorkStart(BaseModel):
+    client_id: uuid.UUID
+    invoice_id: uuid.UUID | None = None
+    idempotency_key: str = Field(min_length=8, max_length=100)
+
+
+class GuidedWorkComplete(BaseModel):
+    completed_step_keys: list[str] = Field(min_length=5, max_length=5)
+    human_minutes: Decimal = Field(ge=0, le=480)
+    outcome: Literal["no_action", "prepare_follow_up", "escalate_review"]
+    outcome_note: str = Field(min_length=3, max_length=1000)
+
+
+class GuidedWorkCancel(BaseModel):
+    reason: str = Field(min_length=3, max_length=500)
+
+
+class GuidedWorkSessionView(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    client_id: uuid.UUID
+    invoice_id: uuid.UUID | None
+    workflow_key: str
+    guidance_version: str
+    status: str
+    checklist_snapshot: list[dict[str, Any]]
+    completed_step_keys: list[str]
+    baseline_minutes: Decimal
+    human_minutes: Decimal | None
+    outcome: str | None
+    outcome_note: str | None
+    started_by: uuid.UUID
+    completed_by: uuid.UUID | None
+    completed_at: datetime | None
+    cancelled_by: uuid.UUID | None
+    cancelled_at: datetime | None
+    cancellation_reason: str | None
+    pilot_log_entry_id: uuid.UUID | None
+    created_at: datetime
+
+
+class GuidedWorkGuideView(BaseModel):
+    workflow_key: str
+    title: str
+    guidance_version: str
+    baseline_minutes_per_case: Decimal
+    target_minutes_per_case: Decimal
+    steps: list[dict[str, Any]]
+    safety_constraints: list[str]
+
+
 class ClientExceptionResponseCreate(BaseModel):
     response_type: Literal["approved", "information_provided", "rejected"]
     message: str = Field(min_length=3, max_length=2000)

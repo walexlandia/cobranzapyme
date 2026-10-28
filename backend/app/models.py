@@ -342,6 +342,85 @@ class PilotLogEntry(BaseRecord, Base):
     resolution_note: Mapped[str | None] = mapped_column(Text)
 
 
+class GuidedWorkSession(BaseRecord, Base):
+    __tablename__ = "guided_work_sessions"
+    __table_args__ = (
+        UniqueConstraint("idempotency_key", name="uq_guided_work_idempotency_key"),
+        CheckConstraint(
+            "workflow_key = 'weekly_portfolio_review'",
+            name="ck_guided_work_workflow_key",
+        ),
+        CheckConstraint(
+            "status IN ('open', 'completed', 'cancelled')",
+            name="ck_guided_work_status",
+        ),
+        CheckConstraint(
+            "baseline_minutes > 0",
+            name="ck_guided_work_positive_baseline",
+        ),
+        CheckConstraint(
+            "human_minutes IS NULL OR (human_minutes >= 0 AND human_minutes <= 480)",
+            name="ck_guided_work_human_minutes",
+        ),
+        CheckConstraint(
+            "(status = 'open' AND human_minutes IS NULL AND completed_by IS NULL "
+            "AND completed_at IS NULL AND pilot_log_entry_id IS NULL "
+            "AND cancelled_by IS NULL AND cancelled_at IS NULL) OR "
+            "(status = 'completed' AND human_minutes IS NOT NULL "
+            "AND completed_by IS NOT NULL AND completed_at IS NOT NULL "
+            "AND pilot_log_entry_id IS NOT NULL AND cancelled_by IS NULL "
+            "AND cancelled_at IS NULL) OR "
+            "(status = 'cancelled' AND human_minutes IS NULL "
+            "AND completed_by IS NULL AND completed_at IS NULL "
+            "AND pilot_log_entry_id IS NULL AND cancelled_by IS NOT NULL "
+            "AND cancelled_at IS NOT NULL)",
+            name="ck_guided_work_state",
+        ),
+        Index(
+            "ix_guided_work_client_status_created",
+            "client_id",
+            "status",
+            "created_at",
+        ),
+    )
+
+    client_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("clients.id"), nullable=False, index=True
+    )
+    invoice_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("invoices.id"), index=True
+    )
+    workflow_key: Mapped[str] = mapped_column(String(80), nullable=False)
+    guidance_version: Mapped[str] = mapped_column(String(20), nullable=False)
+    idempotency_key: Mapped[str] = mapped_column(String(64), nullable=False)
+    status: Mapped[str] = mapped_column(String(20), default="open", nullable=False)
+    checklist_snapshot: Mapped[list[dict[str, Any]]] = mapped_column(
+        JSON, default=list, nullable=False
+    )
+    completed_step_keys: Mapped[list[str]] = mapped_column(
+        JSON, default=list, nullable=False
+    )
+    baseline_minutes: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
+    human_minutes: Mapped[Decimal | None] = mapped_column(Numeric(10, 2))
+    outcome: Mapped[str | None] = mapped_column(String(40))
+    outcome_note: Mapped[str | None] = mapped_column(Text)
+    started_by: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id"), nullable=False, index=True
+    )
+    completed_by: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id"), index=True
+    )
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    cancelled_by: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id"), index=True
+    )
+    cancelled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    cancellation_reason: Mapped[str | None] = mapped_column(Text)
+    pilot_log_entry_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("pilot_log_entries.id"), unique=True
+    )
+
+
 class PilotClosureSnapshot(BaseRecord, Base):
     __tablename__ = "pilot_closure_snapshots"
     __table_args__ = (
