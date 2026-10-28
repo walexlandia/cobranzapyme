@@ -8,7 +8,7 @@ Después de desplegar una revisión, confirmar en este orden:
 
 1. `GET /health/live` responde `200`.
 2. `GET /health/ready` responde `200` y prueba PostgreSQL.
-3. `GET /health/version` informa cabeza `0019`.
+3. `GET /health/version` informa cabeza `0020`.
 4. El diagnóstico muestra `worker.observed=true`, `worker.status=healthy` y un `stale_seconds` menor que 75.
 5. No quedan alertas críticas sin una incidencia registrada y responsable humano.
 

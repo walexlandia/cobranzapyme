@@ -43,6 +43,7 @@ class UserView(BaseModel):
 class ClientCreate(BaseModel):
     name: str = Field(min_length=2, max_length=200)
     rut: str
+    industry: str | None = Field(default=None, min_length=2, max_length=80)
     sender_name: str | None = None
     sender_email: EmailStr | None = None
     bank_details: dict = Field(default_factory=dict)

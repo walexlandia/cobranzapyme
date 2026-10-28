@@ -13,8 +13,8 @@ La nomenclatura `PM` significa **Plan de Mejora** y evita confundir estas fases 
 | PM-0 | Base segura, observable y medible | Completa localmente | E12, métricas del piloto y bloques 9.1–9.3 |
 | PM-1 | Diagnosticar el costo humano | Completa localmente; PM-G1 externo pendiente | Prioridad 1 del backlog posterior |
 | PM-2 | Optimizar un flujo humano comprobado | Completa experimentalmente; PM-G2 real pendiente | E7, E8 y prioridad 1 |
-| PM-3 | Fortalecer comparables y atribución | Bloqueada para producción por PM-G2 real | E9, E11 y prioridad 2 |
-| PM-4 | Automatizar un bloqueo documental probado | Bloqueada por evidencia real | Épica P y prioridad 3 |
+| PM-3 | Fortalecer comparables y atribución | Completa experimentalmente; PM-G3 real pendiente | E9, E11 y prioridad 2 |
+| PM-4 | Automatizar un bloqueo documental probado | Bloqueada para producción por PM-G3 real | Épica P y prioridad 3 |
 | PM-5 | Ejecutar una iteración real acotada | Bloqueada externamente | Prioridades 4–5 y puerta G4 |
 | PM-6 | Preparar escala | Condicional a decisión `scale` | G4 y Épica 13 |
 
@@ -92,7 +92,7 @@ Si falta cualquiera de estos elementos, la tarea permanece como hipótesis y no 
 
 **Objetivo:** demostrar que el resultado observado puede relacionarse con la gestión y no solo con variaciones de cartera o del pagador.
 
-**Trabajo condicionado a PM-G2:**
+**Trabajo autorizado como experimento local por decisión del responsable; condicionado a PM-G2 para uso real:**
 
 - revisar completitud y calidad de las líneas base por pyme;
 - definir cohortes comparables y reglas explícitas de exclusión;
@@ -105,6 +105,8 @@ Si falta cualquiera de estos elementos, la tarea permanece como hipótesis y no 
 **Métricas:** cobertura de línea base, pagos con evidencia trazable, pagos excluidos, concentración y resultados por cohorte.
 
 **Puerta PM-G3:** todo resultado incluido se reconstruye hasta un pago verificado y una regla contractual, sin doble conteo, y las comparaciones declaran sus exclusiones. La evidencia real sigue siendo necesaria para afirmar impacto comercial.
+
+**Estado local al 2026-10-28:** PM-3 está completa experimentalmente. El instrumento usa cada pago verificado como unidad de análisis, exige línea base, evidencia cifrada o movimiento bancario, atribución congelada, contrato y gestión previa elegible, y declara diez motivos de exclusión. La muestra sintética contiene seis pagos: cuatro incluidos, dos excluidos y 66,67% de cobertura trazable; mantiene cero duplicados, cadena completa para todos los incluidos y conciliación exacta de exclusiones. La matriz publica cohortes por pyme anonimizada, pagador, rubro, monto y causa con umbral de privacidad; la concentración máxima es 50% salvo el tramo de monto, que concentra 100%. PM-G3 queda en `passed_synthetic`, por lo que PM-4 sigue sin autorización productiva.
 
 ## PM-4 — Automatización documental basada en evidencia
 
@@ -134,4 +136,4 @@ Esta fase solo existe si PM-G5 termina en `scale`. Recién entonces se priorizan
 
 ## Próximo trabajo autorizado
 
-PM-2 está cerrada localmente en modalidad experimental. El trabajo productivo siguiente continúa siendo **PM-G1/PM-G2 — validación con evidencia real autorizada**. Cualquier avance local hacia PM-3 debe conservar la misma separación explícita entre prueba sintética y autorización productiva.
+PM-3 está cerrada localmente en modalidad experimental. El trabajo productivo pendiente continúa siendo **PM-G1/PM-G2/PM-G3 — validación con evidencia real autorizada**. PM-4 permanece bloqueada para producción; cualquier experimento local posterior deberá admitirse como una fase separada, con problema, métrica, referencia, riesgos, salida y reversión explícitos.

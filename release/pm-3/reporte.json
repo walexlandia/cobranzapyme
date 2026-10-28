@@ -1,0 +1,231 @@
+{
+  "schema_version": "pm-3-v1",
+  "date_from": "2026-09-01",
+  "date_to": "2026-10-28",
+  "evidence_kind": "synthetic",
+  "minimum_group_size": 2,
+  "population": {
+    "verified_payments": 6,
+    "included_payments": 4,
+    "excluded_payments": 2,
+    "included_clients": 2,
+    "verified_amount_clp": "5400000.00",
+    "included_amount_clp": "4000000.00",
+    "traceability_coverage_percent": "66.67"
+  },
+  "baseline_coverage": {
+    "included_clients": 2,
+    "complete": true
+  },
+  "authorization_coverage": {
+    "complete": false
+  },
+  "traceability": {
+    "chain_complete": true,
+    "included_payment_count": 4,
+    "unique_payment_count": 4,
+    "duplicate_count": 0,
+    "exclusions_reconciled": true
+  },
+  "interpretation": {
+    "defensible_attribution": 4,
+    "correlation_only": 1,
+    "uncertain_or_ineligible": 1
+  },
+  "cohorts": [
+    {
+      "dimension": "amount_band",
+      "segment": "500k_a_2m",
+      "payment_count": 4,
+      "invoice_count": 4,
+      "verified_amount_clp": "4000000.00",
+      "baseline_on_time_percent": "37.50",
+      "observed_on_time_percent": "75.00",
+      "on_time_delta_points": "37.50",
+      "attribution_categories": {
+        "arrears_recovery": 2,
+        "preventive_on_time": 2
+      }
+    },
+    {
+      "dimension": "cause",
+      "segment": "missing_document",
+      "payment_count": 2,
+      "invoice_count": 2,
+      "verified_amount_clp": "2000000.00",
+      "baseline_on_time_percent": "37.50",
+      "observed_on_time_percent": "50.00",
+      "on_time_delta_points": "12.50",
+      "attribution_categories": {
+        "arrears_recovery": 2
+      }
+    },
+    {
+      "dimension": "cause",
+      "segment": "purchase_order",
+      "payment_count": 2,
+      "invoice_count": 2,
+      "verified_amount_clp": "2000000.00",
+      "baseline_on_time_percent": "37.50",
+      "observed_on_time_percent": "100.00",
+      "on_time_delta_points": "62.50",
+      "attribution_categories": {
+        "preventive_on_time": 2
+      }
+    },
+    {
+      "dimension": "client",
+      "segment": "PYME-13F8D00AAB",
+      "payment_count": 2,
+      "invoice_count": 2,
+      "verified_amount_clp": "2000000.00",
+      "baseline_on_time_percent": "40.00",
+      "observed_on_time_percent": "50.00",
+      "on_time_delta_points": "10.00",
+      "attribution_categories": {
+        "arrears_recovery": 1,
+        "preventive_on_time": 1
+      }
+    },
+    {
+      "dimension": "client",
+      "segment": "PYME-7DE7739471",
+      "payment_count": 2,
+      "invoice_count": 2,
+      "verified_amount_clp": "2000000.00",
+      "baseline_on_time_percent": "35.00",
+      "observed_on_time_percent": "100.00",
+      "on_time_delta_points": "65.00",
+      "attribution_categories": {
+        "arrears_recovery": 1,
+        "preventive_on_time": 1
+      }
+    },
+    {
+      "dimension": "industry",
+      "segment": "construccion",
+      "payment_count": 2,
+      "invoice_count": 2,
+      "verified_amount_clp": "2000000.00",
+      "baseline_on_time_percent": "35.00",
+      "observed_on_time_percent": "100.00",
+      "on_time_delta_points": "65.00",
+      "attribution_categories": {
+        "arrears_recovery": 1,
+        "preventive_on_time": 1
+      }
+    },
+    {
+      "dimension": "industry",
+      "segment": "servicios_empresariales",
+      "payment_count": 2,
+      "invoice_count": 2,
+      "verified_amount_clp": "2000000.00",
+      "baseline_on_time_percent": "40.00",
+      "observed_on_time_percent": "50.00",
+      "on_time_delta_points": "10.00",
+      "attribution_categories": {
+        "arrears_recovery": 1,
+        "preventive_on_time": 1
+      }
+    },
+    {
+      "dimension": "payer",
+      "segment": "PAGADOR-949C3860F4",
+      "payment_count": 2,
+      "invoice_count": 2,
+      "verified_amount_clp": "2000000.00",
+      "baseline_on_time_percent": "37.50",
+      "observed_on_time_percent": "50.00",
+      "on_time_delta_points": "12.50",
+      "attribution_categories": {
+        "arrears_recovery": 2
+      }
+    },
+    {
+      "dimension": "payer",
+      "segment": "PAGADOR-B168031A58",
+      "payment_count": 2,
+      "invoice_count": 2,
+      "verified_amount_clp": "2000000.00",
+      "baseline_on_time_percent": "37.50",
+      "observed_on_time_percent": "100.00",
+      "on_time_delta_points": "62.50",
+      "attribution_categories": {
+        "preventive_on_time": 2
+      }
+    }
+  ],
+  "suppressed_groups": [],
+  "exclusions": [
+    {
+      "reason": "management_evidence_missing",
+      "description": "No existe evidencia de gestión previa elegible.",
+      "payment_count": 1,
+      "verified_amount_clp": "800000.00"
+    },
+    {
+      "reason": "missing_client_baseline",
+      "description": "La pyme no tiene línea base completa.",
+      "payment_count": 1,
+      "verified_amount_clp": "600000.00"
+    }
+  ],
+  "concentrations": [
+    {
+      "dimension": "client",
+      "top_segment": "PYME-7DE7739471",
+      "share_percent": "50.00"
+    },
+    {
+      "dimension": "payer",
+      "top_segment": "PAGADOR-B168031A58",
+      "share_percent": "50.00"
+    },
+    {
+      "dimension": "industry",
+      "top_segment": "servicios_empresariales",
+      "share_percent": "50.00"
+    },
+    {
+      "dimension": "amount_band",
+      "top_segment": "500k_a_2m",
+      "share_percent": "100.00"
+    },
+    {
+      "dimension": "cause",
+      "top_segment": "purchase_order",
+      "share_percent": "50.00"
+    }
+  ],
+  "evidence_gaps": {
+    "unclassified_cause_payments": 0,
+    "missing_industry_payments": 0
+  },
+  "pm_g3": {
+    "status": "passed_synthetic",
+    "local_phase_complete": true,
+    "pm4_authorized": false,
+    "sample_complete": true,
+    "reason": "Todos los resultados incluidos reconstruyen pago, evidencia, gestión y regla contractual; las exclusiones están declaradas."
+  },
+  "assumptions": {
+    "unit_of_analysis": "verified_payment",
+    "cohort": "Pagos verificados en el período y sus facturas asociadas.",
+    "attribution_rule": "Sólo se incluye una cadena completa y congelada; una asociación temporal aislada se declara correlación.",
+    "double_count_policy": "Cada payment_id puede aparecer una sola vez; una factura con pagos parciales conserva pagos separados sin duplicar montos."
+  },
+  "privacy": {
+    "aggregate_only": true,
+    "aliases": "HMAC-SHA256",
+    "excluded_fields": [
+      "client names",
+      "RUT",
+      "invoice folios",
+      "payment identifiers",
+      "event identifiers",
+      "free-text notes"
+    ]
+  },
+  "fingerprint_sha256": "817425a84214c74f0db6f9aa4c8a220c87f3257258d55618e1b3b4383768f491"
+}

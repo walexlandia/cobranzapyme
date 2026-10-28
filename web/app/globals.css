@@ -406,6 +406,20 @@ td small { display: block; margin-top: 3px; color: var(--ink-soft); }
 .final-report-layout .stats-grid { margin: 0; }
 .final-report-hero { grid-template-columns: minmax(260px, .65fr) minmax(620px, 1.35fr); }
 .final-report-filters { grid-template-columns: repeat(4, minmax(105px, 1fr)); }
+.pm3-layout { display: grid; gap: 14px; }
+.pm3-layout > .message { margin: 0; }
+.pm3-card { display: grid; gap: 18px; border-left: 4px solid var(--accent); }
+.pm3-card .card-heading { align-items: start; }
+.pm3-card .metric-note { max-width: 780px; margin: 6px 0 0; }
+.pm3-controls { display: grid; grid-template-columns: repeat(4, minmax(120px, 1fr)) auto; align-items: end; gap: 9px; padding: 14px; background: var(--paper-soft); }
+.pm3-controls label { display: grid; gap: 5px; font-size: .65rem; font-weight: 700; color: var(--muted); }
+.pm3-controls input, .pm3-controls select { width: 100%; min-height: 40px; }
+.pm3-controls button { min-height: 40px; }
+.pm3-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.pm3-summary .stat { margin: 0; }
+.pm3-columns { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(280px, .65fr); gap: 18px; }
+.pm3-columns h4 { margin: 0 0 9px; font: 500 1rem Georgia, serif; }
+.pm3-columns h4:not(:first-child) { margin-top: 18px; }
 .evidence-banner { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 24px; padding: 20px 24px; border: 1px solid #d5a04d; background: #fff7e8; }
 .evidence-banner.ready { border-color: #7daa82; background: var(--green-soft); }
 .evidence-banner h3 { margin: 4px 0; font: 500 1.45rem Georgia, serif; }
@@ -599,6 +613,9 @@ td small { display: block; margin-top: 3px; color: var(--ink-soft); }
   .metrics-hero { grid-template-columns: 1fr; }
   .final-report-hero { grid-template-columns: 1fr; }
   .metrics-grid { grid-template-columns: 1fr; }
+  .pm3-controls { grid-template-columns: 1fr 1fr; }
+  .pm3-summary { grid-template-columns: 1fr 1fr; }
+  .pm3-columns { grid-template-columns: 1fr; }
   .metric-card.wide-card { grid-column: auto; }
   .pilot-operations-layout { grid-template-columns: 1fr; }
   .pilot-operations-layout > .message, .demo-walkthrough, .pilot-log-card { grid-column: auto; }
@@ -648,6 +665,7 @@ td small { display: block; margin-top: 3px; color: var(--ink-soft); }
   .weekly-strip { grid-template-columns: 1fr; }
   .weekly-strip small { grid-column: auto; }
   .metrics-filters, .trend-comparison { grid-template-columns: 1fr; }
+  .pm3-controls, .pm3-summary { grid-template-columns: 1fr; }
   .walkthrough-steps, .pilot-log-form { grid-template-columns: 1fr; }
   .guided-review-summary { grid-template-columns: 1fr 1fr; }
   .guided-review-start { align-items: stretch; flex-direction: column; }

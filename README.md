@@ -207,6 +207,14 @@ PM-2 optimiza experimentalmente la revisión semanal de cartera:
 - benchmark sintético reproducible de 54 a 36 minutos, una reducción de 33,33%;
 - puerta `passed_synthetic`, que cierra PM-2 localmente sin afirmar impacto real.
 
+PM-3 fortalece experimentalmente los comparables y la atribución:
+
+- unidad de análisis única por pago verificado y reglas explícitas de inclusión y exclusión;
+- reconstrucción de la cadena gestión, evidencia cifrada, pago y regla contractual congelada;
+- cohortes agregadas por pyme anonimizada, pagador, rubro, monto y causa;
+- medición de cobertura, concentración, duplicados y brechas sin exponer identificadores;
+- puerta `passed_synthetic`, que cierra PM-3 localmente pero mantiene PM-4 bloqueada hasta contar con evidencia real autorizada.
+
 ## Servicios
 
 - `db`: PostgreSQL 16.
@@ -278,5 +286,6 @@ Los CSV listos para importar están en `data/demo/imports`. Incluyen tres pymes 
 - `docs/post-plan/estado-pm-1.md`: diagnóstico reproducible, brechas de medición y estado provisional de PM-G1.
 - `docs/post-plan/ensayo-pm-g1.md`: cierre local de PM-1 mediante el ensayo integral desechable del gate.
 - `docs/post-plan/estado-pm-2.md`: flujo guiado, controles y benchmark que cierran PM-2 localmente.
+- `docs/post-plan/estado-pm-3.md`: cohortes, exclusiones, trazabilidad y resultado experimental de PM-G3.
 - `examples/`: archivos de facturas y contactos para probar las importaciones.
 

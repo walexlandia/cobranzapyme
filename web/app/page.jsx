@@ -290,7 +290,7 @@ function SiiImportPanel({ clientId, request, onImported }) {
 function ClientForm({ request, onCreated, onCancel }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [form, setForm] = useState({ name: "", rut: "", sender_name: "", sender_email: "", baseline_dso: "" });
+  const [form, setForm] = useState({ name: "", rut: "", industry: "", sender_name: "", sender_email: "", baseline_dso: "" });
   const change = (event) => setForm((current) => ({ ...current, [event.target.name]: event.target.value }));
 
   async function submit(event) {
@@ -303,6 +303,7 @@ function ClientForm({ request, onCreated, onCancel }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
+          industry: form.industry || null,
           sender_name: form.sender_name || null,
           sender_email: form.sender_email || null,
           baseline_dso: form.baseline_dso ? Number(form.baseline_dso) : null,
@@ -324,6 +325,7 @@ function ClientForm({ request, onCreated, onCancel }) {
         <form onSubmit={submit} className="client-form">
           <label>Razón social<input name="name" value={form.name} onChange={change} required minLength={2} /></label>
           <label>RUT<input name="rut" value={form.rut} onChange={change} placeholder="76.123.456-0" required /></label>
+          <label>Rubro<input name="industry" value={form.industry} onChange={change} placeholder="Ej. construcción" /></label>
           <label>Nombre remitente<input name="sender_name" value={form.sender_name} onChange={change} /></label>
           <label>Correo remitente<input name="sender_email" type="email" value={form.sender_email} onChange={change} /></label>
           <label>DSO línea base<input name="baseline_dso" type="number" min="0" step="0.1" value={form.baseline_dso} onChange={change} /></label>
@@ -1126,6 +1128,45 @@ function MetricsPanel({ clientId, request, download }) {
   </section>;
 }
 
+function AttributionComparablesPanel({ request, download }) {
+  const today = new Date().toISOString().slice(0, 10);
+  const initialStart = new Date(); initialStart.setDate(initialStart.getDate() - 83);
+  const [filters, setFilters] = useState({ date_from: initialStart.toISOString().slice(0, 10), date_to: today, minimum_group_size: "2", evidence_kind: "synthetic" });
+  const [report, setReport] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState(null);
+  const params = useCallback(() => new URLSearchParams(filters).toString(), [filters]);
+  const load = useCallback(async () => {
+    setLoading(true); setMessage(null);
+    try { setReport(await request(`/api/v1/optimizations/comparables-attribution/report?${params()}`)); }
+    catch (error) { setMessage({ type: "error", text: error.message }); }
+    finally { setLoading(false); }
+  }, [params, request]);
+  useEffect(() => { load(); }, [load]);
+  function change(event) { setFilters((current) => ({ ...current, [event.target.name]: event.target.value })); }
+  async function exportArtifact(kind) {
+    const csv = kind === "csv";
+    try {
+      await download(`/api/v1/optimizations/comparables-attribution/${csv ? "matrix.csv" : "report.md"}?${params()}`, `pm3-comparables-${filters.date_to}.${csv ? "csv" : "md"}`);
+      setMessage({ type: "success", text: csv ? "Matriz de comparables exportada." : "Informe PM-3 exportado." });
+    } catch (error) { setMessage({ type: "error", text: error.message }); }
+  }
+  const percentage = (value) => value == null ? "—" : `${Number(value).toLocaleString("es-CL", { maximumFractionDigits: 1 })}%`;
+  const gateLabels = { approved: "Aprobada", passed_synthetic: "Aprobada solo como ensayo", authorization_incomplete: "Falta autorización real", needs_evidence: "Falta evidencia" };
+  return <section className="pm3-layout">
+    <Message value={message} onClose={() => setMessage(null)} />
+    <article className="metric-card wide-card pm3-card">
+      <div className="card-heading"><div><p className="kicker">PM-3 · PUERTA PM-G3</p><h3>Comparables y atribución defendible</h3><p className="metric-note">Reconstruye gestión → evidencia → pago → regla contractual; lo que no completa la cadena se excluye o se declara correlación.</p></div><span className={`status-pill ${report?.pm_g3?.local_phase_complete ? "improved" : "insufficient_data"}`}>{report ? gateLabels[report.pm_g3.status] : "Calculando"}</span></div>
+      <div className="pm3-controls"><label>Desde<input type="date" name="date_from" value={filters.date_from} onChange={change} /></label><label>Hasta<input type="date" name="date_to" value={filters.date_to} onChange={change} /></label><label>Mínimo por cohorte<input type="number" min="1" max="50" name="minimum_group_size" value={filters.minimum_group_size} onChange={change} /></label><label>Evidencia<select name="evidence_kind" value={filters.evidence_kind} onChange={change}><option value="synthetic">Sintética / demo</option><option value="authorized_pilot">Piloto autorizado</option></select></label><button type="button" className="secondary" onClick={load} disabled={loading}>{loading ? "Reconstruyendo…" : "Recalcular"}</button></div>
+      {report && <>
+        <section className="pm3-summary"><Stat label="Pagos verificados" value={report.population.verified_payments} note={`${report.population.included_payments} incluidos`} /><Stat label="Cobertura trazable" value={percentage(report.population.traceability_coverage_percent)} note={`${report.population.excluded_payments} excluidos`} /><Stat label="Duplicados" value={report.traceability.duplicate_count} note={report.traceability.chain_complete ? "cadena completa" : "cadena incompleta"} /><Stat label="PM-4 autorizada" value={report.pm_g3.pm4_authorized ? "Sí" : "No"} note={report.evidence_kind === "synthetic" ? "ensayo no productivo" : "requiere cobertura autorizada"} /></section>
+        <div className="pm3-columns"><div><h4>Matriz de cohortes</h4><div className="table-wrap"><table><thead><tr><th>Dimensión</th><th>Segmento</th><th>Pagos</th><th>Δ oportuno</th></tr></thead><tbody>{report.cohorts.map((item) => <tr key={`${item.dimension}-${item.segment}`}><td>{item.dimension.replaceAll("_", " ")}</td><td><b>{item.segment.replaceAll("_", " ")}</b></td><td>{item.payment_count}</td><td>{percentage(item.on_time_delta_points)}</td></tr>)}{!report.cohorts.length && <tr><td colSpan="4" className="empty">Sin cohortes que superen el umbral.</td></tr>}</tbody></table></div></div><div><h4>Concentración máxima</h4><div className="rank-list">{report.concentrations.map((item) => <div key={item.dimension}><span>{item.dimension.replaceAll("_", " ")}</span><b>{percentage(item.share_percent)}</b><small>{item.top_segment?.replaceAll("_", " ") || "sin muestra"}</small></div>)}</div><h4>Exclusiones declaradas</h4><div className="rank-list">{report.exclusions.map((item) => <div key={item.reason}><span>{item.reason.replaceAll("_", " ")}</span><b>{item.payment_count}</b><small>{item.description}</small></div>)}{!report.exclusions.length && <p className="empty">Sin exclusiones.</p>}</div></div></div>
+        <div className="report-actions"><div><b>Artefactos reproducibles</b><span>Solo agregados, alias HMAC y grupos sobre el umbral de privacidad. Huella {report.fingerprint_sha256.slice(0, 16)}…</span></div><button type="button" className="secondary" onClick={() => exportArtifact("csv")}>Descargar matriz CSV</button><button type="button" className="secondary" onClick={() => exportArtifact("md")}>Descargar informe PM-3</button></div>
+      </>}
+    </article>
+  </section>;
+}
+
 function FinalReportPanel({ request, download, user }) {
   const today = new Date().toISOString().slice(0, 10);
   const initialStart = new Date(); initialStart.setDate(initialStart.getDate() - 55);
@@ -1197,6 +1238,7 @@ function FinalReportPanel({ request, download, user }) {
   return <section className="final-report-layout">
     <Message value={message} onClose={() => setMessage(null)} />
     <article className="metrics-hero final-report-hero"><div><p className="kicker">FASE 8.1 · V-10</p><h3>Cierre verificable del piloto</h3><p>Compara cada pyme con su línea base, anonimiza el dataset y aplica la matriz G4 sin convertir una demostración sintética en evidencia real.</p></div><div className="metrics-filters final-report-filters"><label>Desde<input type="date" name="date_from" value={filters.date_from} onChange={change} /></label><label>Hasta<input type="date" name="date_to" value={filters.date_to} onChange={change} /></label><label>Costo humano CLP/h<input type="number" min="0" name="human_hourly_cost_clp" value={filters.human_hourly_cost_clp} onChange={change} /></label><label>CLP por USD<input type="number" min="1" name="usd_clp_rate" value={filters.usd_clp_rate} onChange={change} /></label><label>Mínimo por grupo<input type="number" min="1" max="50" name="minimum_group_size" value={filters.minimum_group_size} onChange={change} /></label><label>Tipo de evidencia<select name="evidence_kind" value={filters.evidence_kind} onChange={change}><option value="synthetic">Sintética / demo</option><option value="authorized_pilot">Piloto autorizado</option></select></label><button type="button" className="secondary" onClick={load} disabled={loading}>{loading ? "Calculando…" : "Recalcular"}</button></div></article>
+    <AttributionComparablesPanel request={request} download={download} />
     {report && <>
       <article className={`evidence-banner ${report.g4.ready ? "ready" : "pending"}`}><div><p className="kicker">PUERTA G4</p><h3>{recommendationLabels[report.g4.recommendation]}</h3><p>{report.g4.reason}</p></div><div><span>{report.evidence_kind === "synthetic" ? "Evidencia sintética" : "Piloto autorizado"}</span><b>{report.period_days} días · {report.portfolio.client_count} pymes</b><small>Autorizaciones {report.authorization_coverage.authorized_clients}/{report.authorization_coverage.participating_clients} · huella {report.fingerprint_sha256.slice(0, 16)}…</small></div></article>
       <section className="stats-grid"><Stat label="Pymes analizadas" value={report.portfolio.client_count} note="seudónimos estables" /><Stat label="Facturas gestionadas" value={report.portfolio.managed_invoices} note={`${report.portfolio.settled_invoices} saldadas`} /><Stat label="Pago oportuno" value={percentage(report.portfolio.on_time_percent)} note="ponderado por saldadas" /><Stat label="DSO agregado" value={decimal(report.portfolio.average_dso, " días")} note="ponderado por saldadas" /><Stat label="Monto verificado" value={money.format(Number(report.portfolio.verified_amount_clp))} note="solo pagos verificados" /><Stat label="Minutos humanos" value={decimal(report.portfolio.human_minutes)} note="operación + excepciones" /><Stat label="Costo total" value={money.format(Number(report.portfolio.total_cost_clp))} note="tecnología + personas" /><Stat label="Margen estimado" value={money.format(Number(report.portfolio.margin_clp))} note="supuestos reproducibles" /></section>

@@ -1,0 +1,10 @@
+﻿schema_version,dimension,segment,payment_count,invoice_count,verified_amount_clp,baseline_on_time_percent,observed_on_time_percent,on_time_delta_points
+pm-3-v1,amount_band,500k_a_2m,4,4,4000000.00,37.50,75.00,37.50
+pm-3-v1,cause,missing_document,2,2,2000000.00,37.50,50.00,12.50
+pm-3-v1,cause,purchase_order,2,2,2000000.00,37.50,100.00,62.50
+pm-3-v1,client,PYME-13F8D00AAB,2,2,2000000.00,40.00,50.00,10.00
+pm-3-v1,client,PYME-7DE7739471,2,2,2000000.00,35.00,100.00,65.00
+pm-3-v1,industry,construccion,2,2,2000000.00,35.00,100.00,65.00
+pm-3-v1,industry,servicios_empresariales,2,2,2000000.00,40.00,50.00,10.00
+pm-3-v1,payer,PAGADOR-949C3860F4,2,2,2000000.00,37.50,50.00,12.50
+pm-3-v1,payer,PAGADOR-B168031A58,2,2,2000000.00,37.50,100.00,62.50

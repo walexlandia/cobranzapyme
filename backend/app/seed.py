@@ -48,6 +48,7 @@ DEMO_CLIENTS = [
     (
         "Servicios Cordillera SpA",
         "76123456-0",
+        "servicios_empresariales",
         Decimal("51.40"),
         Decimal("46.67"),
         {"on_time": 7, "late_1_15": 6, "late_16_30": 2, "late_31_plus": 0},
@@ -55,6 +56,7 @@ DEMO_CLIENTS = [
     (
         "Ingeniería del Sur Ltda.",
         "76543210-3",
+        "ingenieria",
         Decimal("46.20"),
         Decimal("42.86"),
         {"on_time": 6, "late_1_15": 5, "late_16_30": 3, "late_31_plus": 0},
@@ -62,6 +64,7 @@ DEMO_CLIENTS = [
     (
         "Montajes Atacama SpA",
         "77345678-K",
+        "construccion_montaje",
         Decimal("57.80"),
         Decimal("43.75"),
         {"on_time": 7, "late_1_15": 6, "late_16_30": 3, "late_31_plus": 0},
@@ -95,12 +98,13 @@ def seed() -> None:
             db.flush()
 
         clients: list[Client] = []
-        for name, rut, dso, on_time, late_distribution in DEMO_CLIENTS:
+        for name, rut, industry, dso, on_time, late_distribution in DEMO_CLIENTS:
             client = db.scalar(select(Client).where(Client.rut == rut))
             if client is None:
                 client = Client(
                     name=name,
                     rut=rut,
+                    industry=industry,
                     baseline_dso=dso,
                     baseline_on_time_percent=on_time,
                     baseline_late_distribution=late_distribution,
@@ -115,6 +119,7 @@ def seed() -> None:
                     payload={"demo": True},
                 )
             else:
+                client.industry = client.industry or industry
                 client.baseline_dso = client.baseline_dso or dso
                 client.baseline_on_time_percent = client.baseline_on_time_percent or on_time
                 if not client.baseline_late_distribution:

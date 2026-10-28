@@ -34,6 +34,7 @@ def create_client(
         client = Client(
             name=payload.name,
             rut=normalize_rut(payload.rut),
+            industry=payload.industry.strip() if payload.industry else None,
             sender_name=payload.sender_name,
             sender_email=str(payload.sender_email) if payload.sender_email else None,
             bank_details=payload.bank_details,

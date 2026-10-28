@@ -43,6 +43,7 @@ class Client(BaseRecord, Base):
 
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     rut: Mapped[str] = mapped_column(String(12), unique=True, nullable=False)
+    industry: Mapped[str | None] = mapped_column(String(80), index=True)
     sender_name: Mapped[str | None] = mapped_column(String(200))
     sender_email: Mapped[str | None] = mapped_column(String(320))
     bank_details: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
